@@ -8,7 +8,8 @@ import { joinWallAxes, resolvedOpening } from '../model/architecture';
 import { DEFAULT_WALL_SETTINGS, matchWallThickness } from '../model/wall-presets';
 import { DEFAULT_DOOR_SETTINGS, doorRecognitionSettings, matchDoorWidth } from '../model/door-presets';
 import { DEFAULT_PIPE_SETTINGS } from '../model/pipe-presets';
-import type { Candidate, Point } from '../model/types';
+import { inferRoomKind, kindFromName, ROOM_TYPES } from '../model/room-types';
+import type { Candidate, Point, Project, RoomKind } from '../model/types';
 import type { RecognitionResult } from '../model/recognition';
 export default function ReferenceControls() {
   const {
@@ -187,15 +188,53 @@ export default function ReferenceControls() {
           return;
         }
         const result = e.data as RecognitionResult;
-        const found: Candidate[] = result.rooms.map(
-          (r: { poly: Point[]; areaPixels: number }, i: number) => ({
+        const typeContext: Project = {
+          ...project,
+          furniture: [],
+          openings: [],
+          shafts: result.shafts
+            .filter((o) => o.selected)
+            .map((o, i) => ({
+              id: `type-shaft-${i}`,
+              name: '烟道',
+              poly: rect([o.x * sx, o.y * sy], [(o.x + o.w) * sx, (o.y + o.h) * sy]).map((point) =>
+                imagePoint(ref, point),
+              ),
+              height: 2800,
+            })),
+          devices: result.pipes
+            .filter((o) => o.selected)
+            .map((o, i) => {
+              const [x, y] = imagePoint(ref, [o.x * sx, o.y * sy]);
+              return {
+                id: `type-pipe-${i}`,
+                kind: 'pipe',
+                x,
+                y,
+                height: 2800,
+                name: '竖管',
+                circuit: '',
+                rotation: 0,
+              };
+            }),
+        };
+        const found: Candidate[] = result.rooms.map((r: { poly: Point[]; areaPixels: number }, i: number) => {
+          const poly = r.poly.map(([x, y]) => [x * sx, y * sy] as Point);
+          const suggestion = inferRoomKind(typeContext, {
+            name: '',
+            poly: poly.map((point) => imagePoint(ref, point)),
+          });
+          return {
             id: uid(),
             name: `房间 ${i + 1}`,
-            poly: r.poly.map(([x, y]) => [x * sx, y * sy]),
+            poly,
+            kind: suggestion.confidence === 'low' ? undefined : suggestion.kind,
+            suggestedKind: suggestion.kind,
+            typeReason: suggestion.reason,
             selected: true,
             areaPixels: r.areaPixels * sx * sy,
-          }),
-        );
+          };
+        });
         setCandidates(found);
         setRecognition({
           source: ref.src,
@@ -326,6 +365,7 @@ export default function ReferenceControls() {
         ...rooms.map((r) => ({
           id: r.id,
           name: r.name,
+          kind: r.kind ?? (kindFromName(r.name) === 'unknown' ? undefined : kindFromName(r.name)),
           poly: r.poly,
           flooring: structuredClone(d.globalFlooring),
           boundary: !recognition.importWalls,
@@ -983,6 +1023,37 @@ export default function ReferenceControls() {
                       }
                     />
                     <small>{area(c.poly.map((p) => imagePoint(ref, p))).toFixed(1)} ㎡</small>
+                    <select
+                      className="candidate-type"
+                      aria-label={`候选房间 ${i + 1} 类型`}
+                      value={c.kind ?? 'unknown'}
+                      onChange={(e) =>
+                        setCandidates(
+                          candidates.map((v) =>
+                            v.id === c.id ? { ...v, kind: e.target.value as RoomKind } : v,
+                          ),
+                        )
+                      }
+                    >
+                      {Object.entries(ROOM_TYPES).map(([kind, value]) => (
+                        <option value={kind} key={kind}>
+                          {value.label}
+                        </option>
+                      ))}
+                    </select>
+                    <small className="candidate-type-hint">{c.typeReason}</small>
+                    {c.suggestedKind && c.suggestedKind !== 'unknown' && c.kind !== c.suggestedKind && (
+                      <button
+                        className="candidate-type wide secondary"
+                        onClick={() =>
+                          setCandidates(
+                            candidates.map((v) => (v.id === c.id ? { ...v, kind: c.suggestedKind } : v)),
+                          )
+                        }
+                      >
+                        采用建议：{ROOM_TYPES[c.suggestedKind].label}
+                      </button>
+                    )}
                   </div>
                 ))}
               </div>

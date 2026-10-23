@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { WALLS, WINS, DOORS, SLIDES, ROOMS, defaultFurniture } from '../data/original';
 import { defaultFloor, FLOOR_PRESETS } from './presets';
 import { validPolygon } from './geometry';
+import { kindFromName } from './room-types';
 import type { Point, Project } from './types';
 const num = z.number().finite(),
   coord = num.min(-1000000).max(1000000),
@@ -26,6 +27,14 @@ export const projectSchema = z
   .object({
     version: z.literal(2),
     name,
+    analysis: z
+      .object({
+        flows: z.array(z.enum(['daily', 'housework', 'guest'])).max(3),
+        showAreas: z.boolean(),
+        showTypes: z.boolean(),
+        clearance: num.min(300).max(1200),
+      })
+      .optional(),
     continuous: z.boolean(),
     globalFlooring: flooring,
     wallFinish: z
@@ -36,6 +45,21 @@ export const projectSchema = z
         z.object({
           id,
           name,
+          kind: z
+            .enum([
+              'unknown',
+              'living',
+              'bedroom',
+              'kitchen',
+              'dining',
+              'bathroom',
+              'balcony',
+              'laundry',
+              'study',
+              'storage',
+              'hallway',
+            ])
+            .optional(),
           poly: z.array(point).min(3).max(300).refine(validPolygon, '房间轮廓面积过小或边线相交'),
           flooring,
           boundary: z.boolean(),
@@ -234,6 +258,7 @@ export function demoProject(): Project {
   p.rooms = ROOMS.map((r) => ({
     id: r.id,
     name: r.name,
+    kind: kindFromName(r.name),
     poly: r.poly as Point[],
     flooring: structuredClone(FLOOR_PRESETS.find((v) => v.id === r.mat)?.value || defaultFloor()),
     boundary: false,
@@ -277,7 +302,10 @@ export function parseProject(data: unknown): Project {
     p.walls = p.walls.filter((w) => !legacy.demolished?.includes(w.id));
     for (const r of p.rooms) {
       const old = legacy.rooms?.[r.id];
-      if (old?.name) r.name = old.name;
+      if (old?.name) {
+        r.name = old.name;
+        r.kind = kindFromName(old.name);
+      }
       if (old?.mat)
         r.flooring = structuredClone(FLOOR_PRESETS.find((f) => f.id === old.mat)?.value || r.flooring);
     }

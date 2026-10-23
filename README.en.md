@@ -13,12 +13,16 @@ A browser-based floorplan editor for drawing rooms, recognizing reference images
 - **Floorplan editing:** rectangular and polygonal rooms, editable vertices and dimensions, walls, doors, windows, bay windows, glass railings and shafts.
 - **Image recognition:** upload, drop or paste a reference image; review locally detected rooms, walls, openings, shafts and vertical pipes, then calibrate dimensions.
 - **Furniture and utilities:** 94 furniture presets across 8 categories with cross-category search, editable water and electrical routes, and device placement with elevation and circuit settings.
+- **Room planning:** explainable room-use suggestions and manual overrides, with one-click furnishing by room type, standard/compact furniture and fill/replace modes.
+- **Space analysis:** net floor area, furniture footprint, remaining floor and storage footprint; daily, housework and guest routes with furniture bottleneck overlays.
 - **Floor layouts:** tile and wood presets, custom dimensions, grout, patterns and laying origins, with whole-home or per-room layouts.
 - **Quantity estimates:** flooring materials and costs, wall finish areas and wallpaper reference areas, with CSV exports.
 - **3D views:** orbit and top views, cutaway walls, day/night lighting, interactive doors and indoor walkthroughs.
 - **Project files:** local autosave, up to 60 undo/redo steps, validated JSON import/export and 2D/3D PNG export.
 
 See the [3D preview of the 24 added furniture types](docs/images/furniture-catalog.png).
+
+![Room types, automatic furnishing, floor areas and circulation analysis](docs/images/space-analysis.png)
 
 ## Quick start
 

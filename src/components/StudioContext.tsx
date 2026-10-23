@@ -1,6 +1,7 @@
 import { createContext, useContext } from 'react';
 import type { Candidate, DeviceKind, Project, Selection, Tool, UtilityKind, Workspace } from '../model/types';
 import type { RecognitionResult, RecognizedOpening, RecognizedShaft } from '../model/recognition';
+import type { analyzeCirculation } from '../model/circulation';
 export interface RecognitionPreview extends Omit<
   RecognitionResult,
   'rooms' | 'openings' | 'shafts' | 'pipes'
@@ -18,9 +19,10 @@ export interface RecognitionPreview extends Omit<
 }
 export interface StudioState {
   project: Project;
+  circulation: ReturnType<typeof analyzeCirculation>;
   commit: (fn: Project | ((draft: Project) => void)) => void;
   selection: Selection;
-  select: (v: Selection) => void;
+  select: (v: Selection, reveal?: boolean) => void;
   tool: Tool;
   setTool: (v: Tool) => void;
   workspace: Workspace;

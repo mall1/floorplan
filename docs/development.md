@@ -27,7 +27,7 @@ $env:PLAYWRIGHT_CHANNEL = 'chrome'
 npm run test:e2e
 ```
 
-单元测试覆盖几何、门窗与墙体识别、铺装、墙面面积、旧方案迁移和家具模型；浏览器测试覆盖户型编辑、图片上传与识别、尺寸校准、用量估算、JSON 往返、PNG 导出、3D 与窄屏布局。
+单元测试覆盖几何、门窗与墙体识别、铺装、墙面面积、房间用途、自动布置避障、空间面积去重、动线寻路、旧方案迁移和家具模型；浏览器测试覆盖户型编辑、图片上传与识别、尺寸校准、自动布置与撤销、空间分析、用量估算、JSON 往返、PNG 导出、3D 与窄屏布局。
 
 ## GitHub Pages
 
@@ -66,6 +66,11 @@ src/
   model/pipe-recognition.ts  竖管符号识别
   model/pipe-presets.ts      管道外径预设与容差匹配
   model/wall-area.ts         墙面面积与洞口扣除估算
+  model/room-types.ts        房间用途规则、置信度与识别依据
+  model/auto-layout.ts       按用途布置、配套家具朝向与碰撞约束
+  model/space-geometry.ts    旋转家具轮廓、多边形并集及差集面积
+  model/space-analysis.ts    净地面、占地、活动和收纳面积与 CSV
+  model/circulation.ts       动线场景、障碍网格、A* 与瓶颈定位
   model/calibration.ts       按参考边等比例校准全屋
   model/shafts.ts            扣除烟道占地的房间净面积
   model/walkthrough.ts       安全出生点、碰撞和滑动

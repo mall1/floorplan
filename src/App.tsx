@@ -1,4 +1,4 @@
-import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Grid2X2,
   Sofa,
@@ -24,6 +24,8 @@ import {
 import { useProject } from './hooks/useProject';
 import { StudioContext, type StudioState, type RecognitionPreview } from './components/StudioContext';
 import Library from './components/Library';
+import { analyzeCirculation, FLOW_TYPES } from './model/circulation';
+import { DEFAULT_ANALYSIS } from './model/space-analysis';
 import Inspector from './components/Inspector';
 import PlanCanvas from './components/PlanCanvas';
 import { demoProject, emptyProject, parseProject } from './model/project';
@@ -62,6 +64,15 @@ export default function App() {
     [calibrationLength, setCalibrationLength] = useState(3000),
     [candidates, setCandidates] = useState<Candidate[]>([]);
   const [recognition, setRecognition] = useState<RecognitionPreview | null>(null);
+  const circulation = useMemo(
+    () =>
+      analyzeCirculation(
+        project,
+        project.analysis?.flows ?? [],
+        project.analysis?.clearance ?? DEFAULT_ANALYSIS.clearance,
+      ),
+    [project],
+  );
   useEffect(() => {
     setCandidates([]);
     setRecognition(null);
@@ -93,6 +104,7 @@ export default function App() {
     setTool('select');
     setView('2d');
     setLeft(true);
+    if (window.innerWidth <= 960) setRight(false);
     setLayers((v) => ({ ...v, flooring: w === 'flooring', furniture: w !== 'flooring' }));
   };
   const deleteSelected = () => {
@@ -215,9 +227,16 @@ export default function App() {
   };
   const state: StudioState = {
     project,
+    circulation,
     commit,
     selection,
-    select,
+    select: (v, reveal) => {
+      select(v);
+      if (reveal) {
+        setRight(true);
+        if (window.innerWidth <= 960) setLeft(false);
+      }
+    },
     tool,
     setTool: (next) => {
       setTool(next);
@@ -393,6 +412,7 @@ export default function App() {
               { id: 'furniture', name: '家具布置', Icon: Sofa },
               { id: 'utilities', name: '水电布局', Icon: Cable },
               { id: 'flooring', name: '地面铺装', Icon: Layers3 },
+              { id: 'analysis', name: '空间分析', Icon: Compass },
             ] as const
           ).map(({ id, name, Icon }, i) => (
             <button key={id} className={workspace === id ? 'active' : ''} onClick={() => setWorkspace(id)}>
@@ -481,6 +501,34 @@ export default function App() {
                 <Compass size={28} />
                 <span>N</span>
               </div>
+              {(!!project.analysis?.flows.length || project.analysis?.showAreas) && (
+                <div className="analysis-legend">
+                  {project.analysis?.flows.map((kind) => (
+                    <span key={kind}>
+                      <i style={{ background: FLOW_TYPES[kind].color }} />
+                      {FLOW_TYPES[kind].label}
+                    </span>
+                  ))}
+                  {project.analysis?.showAreas && (
+                    <>
+                      <span>
+                        <i style={{ background: '#d59b58' }} />
+                        家具占地
+                      </span>
+                      <span>
+                        <i style={{ background: '#8a6aaf' }} />
+                        收纳占地
+                      </span>
+                    </>
+                  )}
+                  {!!project.analysis?.flows.length && (
+                    <span>
+                      <i style={{ background: '#c45f4d' }} />
+                      家具瓶颈
+                    </span>
+                  )}
+                </div>
+              )}
               <div className="scale-note">
                 <span />
                 网格 250 mm · 尺寸单位 mm

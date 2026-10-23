@@ -16,6 +16,7 @@ export interface Flooring {
 export interface Room {
   id: string;
   name: string;
+  kind?: RoomKind;
   poly: Point[];
   flooring: Flooring;
   boundary: boolean;
@@ -24,6 +25,19 @@ export interface Room {
   edgeWidths?: Record<string, number>;
   wallFinish?: { included?: boolean; height?: number };
 }
+export type RoomKind =
+  | 'unknown'
+  | 'living'
+  | 'bedroom'
+  | 'kitchen'
+  | 'dining'
+  | 'bathroom'
+  | 'balcony'
+  | 'laundry'
+  | 'study'
+  | 'storage'
+  | 'hallway';
+export type FlowKind = 'daily' | 'housework' | 'guest';
 export interface Wall {
   id: string;
   a: Point;
@@ -141,12 +155,13 @@ export interface Project {
   continuous: boolean;
   globalFlooring: Flooring;
   wallFinish?: { height?: number; waste: number };
+  analysis?: { flows: FlowKind[]; showAreas: boolean; showTypes: boolean; clearance: number };
 }
 export type Selection = {
   kind: 'room' | 'wall' | 'opening' | 'shaft' | 'furniture' | 'route' | 'device' | 'measure';
   id: string;
 } | null;
-export type Workspace = 'plan' | 'furniture' | 'utilities' | 'flooring';
+export type Workspace = 'plan' | 'furniture' | 'utilities' | 'flooring' | 'analysis';
 export type Tool =
   | 'select'
   | 'pan'
@@ -167,6 +182,9 @@ export type Tool =
 export interface Candidate {
   id: string;
   name: string;
+  kind?: RoomKind;
+  suggestedKind?: RoomKind;
+  typeReason?: string;
   poly: Point[];
   selected: boolean;
   areaPixels: number;

@@ -2,6 +2,7 @@ import { Copy, RotateCw, Trash2, SlidersHorizontal, ChevronRight, Download } fro
 import { useStudio } from './StudioContext';
 import RoomCalibrationControls from './RoomCalibrationControls';
 import WallAreaPanel from './WallAreaPanel';
+import RoomPlanning from './RoomPlanning';
 import { NumberField, Section, TextField } from './Fields';
 import {
   allWalls,
@@ -199,6 +200,7 @@ export default function Inspector({ onClose }: { onClose: () => void }) {
       )}
       {room && (
         <>
+          <RoomPlanning key={room.id} room={room} />
           <Section title="房间信息">
             <TextField
               label="房间名称"
@@ -212,7 +214,7 @@ export default function Inspector({ onClose }: { onClose: () => void }) {
             <div className="metrics">
               <div>
                 <strong>{usableArea(p, room).toFixed(2)}</strong>
-                <span>净面积 / ㎡</span>
+                <span>轮廓面积（扣烟道）/ ㎡</span>
               </div>
               <div>
                 <strong>{room.poly.length}</strong>
@@ -975,7 +977,7 @@ export default function Inspector({ onClose }: { onClose: () => void }) {
               {total.toFixed(1)}
               <small> ㎡</small>
             </strong>
-            <span>套内净面积</span>
+            <span>铺装计量面积</span>
           </div>
           <div>
             <strong>

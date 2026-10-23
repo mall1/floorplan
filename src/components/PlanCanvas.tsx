@@ -1,6 +1,7 @@
 import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import { useStudio } from './StudioContext';
 import RecognitionOverlay from './RecognitionOverlay';
+import SpaceAnalysisOverlay from './SpaceAnalysisOverlay';
 import {
   allWalls,
   bounds,
@@ -618,6 +619,7 @@ export default function PlanCanvas({
           {s.layers.flooring && <FloorTiles poly={r.poly} floor={floorFor(p, r)} id={r.id} />}
         </g>
       ))}
+      <SpaceAnalysisOverlay background />
       {wallList.map((w) => (
         <g key={w.id} data-kind="wall" data-id={w.id}>
           <polygon points={points(wallFootprint(w, wallList))} fill={w.bearing ? '#444b47' : '#747a71'} />
@@ -809,34 +811,36 @@ export default function PlanCanvas({
           </g>
         ))}
       {s.layers.labels &&
-        p.rooms.map((r) => {
-          const c = roomCenter(r.poly);
-          return (
-            <g key={r.id} pointerEvents="none" transform={`translate(${c})`}>
-              <rect
-                x={-Math.max(330, r.name.length * 75)}
-                y="-120"
-                width={Math.max(660, r.name.length * 150)}
-                height="430"
-                rx="60"
-                fill="#fffdf7"
-                fillOpacity=".87"
-              />
-              <text
-                textAnchor="middle"
-                fontSize="170"
-                fontWeight="600"
-                fill="#38473f"
-                fontFamily="sans-serif"
-              >
-                {r.name}
-              </text>
-              <text y="225" textAnchor="middle" fontSize="145" fill="#7e887c" fontFamily="sans-serif">
-                {usableArea(p, r).toFixed(2)} ㎡
-              </text>
-            </g>
-          );
-        })}
+        p.rooms
+          .filter((r) => !r.counted || !(p.analysis?.showAreas || p.analysis?.showTypes))
+          .map((r) => {
+            const c = roomCenter(r.poly);
+            return (
+              <g key={r.id} pointerEvents="none" transform={`translate(${c})`}>
+                <rect
+                  x={-Math.max(330, r.name.length * 75)}
+                  y="-120"
+                  width={Math.max(660, r.name.length * 150)}
+                  height="430"
+                  rx="60"
+                  fill="#fffdf7"
+                  fillOpacity=".87"
+                />
+                <text
+                  textAnchor="middle"
+                  fontSize="170"
+                  fontWeight="600"
+                  fill="#38473f"
+                  fontFamily="sans-serif"
+                >
+                  {r.name}
+                </text>
+                <text y="225" textAnchor="middle" fontSize="145" fill="#7e887c" fontFamily="sans-serif">
+                  {usableArea(p, r).toFixed(2)} ㎡
+                </text>
+              </g>
+            );
+          })}
       {s.layers.utilities && (
         <>
           {p.routes.map((r) => (
@@ -1015,6 +1019,7 @@ export default function PlanCanvas({
             </g>
           );
         })()}
+      <SpaceAnalysisOverlay />
       {transient.length > 0 && (
         <g data-editor-only="true" pointerEvents="none">
           {['rectangle', 'shaft'].includes(s.tool) && transient.length >= 2 ? (

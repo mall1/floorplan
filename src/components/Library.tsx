@@ -14,6 +14,7 @@ import { useState } from 'react';
 import { useStudio } from './StudioContext';
 import ReferenceControls from './ReferenceControls';
 import FloorControls from './FloorControls';
+import SpaceAnalysisPanel from './SpaceAnalysisPanel';
 import { Section } from './Fields';
 import { LIB } from '../data/original';
 import { furnSVG } from '../render/furniture-svg';
@@ -54,14 +55,18 @@ export default function Library({ onClose }: { onClose: () => void }) {
           <span className="eyebrow">DESIGN TOOLKIT</span>
           <h2>
             {
-              { plan: '户型设计', furniture: '家具布置', utilities: '水电布局', flooring: '地面铺装' }[
-                s.workspace
-              ]
+              {
+                plan: '户型设计',
+                furniture: '家具布置',
+                utilities: '水电布局',
+                flooring: '地面铺装',
+                analysis: '空间分析',
+              }[s.workspace]
             }
           </h2>
         </div>
         <span className="step-number">
-          0{['plan', 'furniture', 'utilities', 'flooring'].indexOf(s.workspace) + 1}
+          0{['plan', 'furniture', 'utilities', 'flooring', 'analysis'].indexOf(s.workspace) + 1}
         </span>
         <button className="panel-close" aria-label="关闭工具面板" onClick={onClose}>
           ×
@@ -227,6 +232,7 @@ export default function Library({ onClose }: { onClose: () => void }) {
         </>
       )}
       {s.workspace === 'flooring' && <FloorControls />}
+      {s.workspace === 'analysis' && <SpaceAnalysisPanel />}
     </aside>
   );
 }

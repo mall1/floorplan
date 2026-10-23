@@ -94,6 +94,8 @@ test('balcony doors, shafts, recognition presets and jamb edits persist together
   await expect(page.getByTestId('recognized-door').filter({ hasText: '推拉门' })).toHaveCount(1);
   await expect(page.getByLabel('选择烟道 1', { exact: true })).toBeChecked();
   await expect(page.getByTestId('recognized-pipe')).toHaveCount(2);
+  await page.getByLabel('候选房间 1 类型', { exact: true }).selectOption('kitchen');
+  await page.getByLabel('候选房间 2 类型', { exact: true }).selectOption('balcony');
   await page.getByLabel('竖管 1 用途', { exact: true }).selectOption('drain');
   await expect(page.getByLabel('竖管 1 外径', { exact: true })).toHaveValue('150');
   await page.screenshot({ path: 'artifacts/studio-balcony-recognition.png' });
@@ -101,6 +103,7 @@ test('balcony doors, shafts, recognition presets and jamb edits persist together
   let p = await saved(page);
   expect(p.shafts).toHaveLength(1);
   expect(p.rooms).toHaveLength(2);
+  expect(p.rooms.map((r: { kind: string }) => r.kind)).toEqual(['kitchen', 'balcony']);
   expect(p.devices).toHaveLength(2);
   expect(p.devices[0]).toMatchObject({ kind: 'pipe', diameter: 150, pipeSystem: 'drain' });
   expect(p.reference.pipeSettings).toEqual({ enabled: true, diameters: [63, 90, 150], tolerance: 30 });
