@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+import { buildExtraFurniture } from './furniture-extra';
 const M = (v) => v / 1000,
   wx = M,
   wz = M;
@@ -1927,8 +1928,10 @@ function buildFurniture(f) {
       g.add(cg);
       break;
     }
-    default:
-      g.add(box(w, 0.8, d, c));
+    default: {
+      const extra = buildExtraFurniture(f.type, w, d, c, mat);
+      g.add(extra || box(w, 0.8, d, c));
+    }
   }
   g.position.set(wx(f.cx), 0, wz(f.cy));
   g.rotation.y = (-f.rot * Math.PI) / 180; // 平面顺时针旋转 → 绕 Y 轴负向

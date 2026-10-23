@@ -299,6 +299,159 @@ function furnSVG(t, w, d, c) {
         rc(x + 90, y + 320, w - 180, d - 400, '#1c1c1e', 'rx="25"') +
         rc(x, y, w, 230, shade(c, 1.4), 'rx="40"')
       );
+    case 'bunkbed': {
+      let s = furnSVG('bed', w, d, c);
+      s += rc(x, y, w * 0.045, d, shade(c, 0.7)) + rc(w * 0.455, y, w * 0.045, d, shade(c, 0.7));
+      s += rc(w * 0.16, d * 0.32, w * 0.28, d * 0.18, 'none');
+      for (let i = 1; i < 4; i++) s += ln(w * 0.16, d * (0.32 + i * 0.045), w * 0.44, d * (0.32 + i * 0.045));
+      return s;
+    }
+    case 'daybed':
+      return (
+        rc(x, y, w, d, shade(c, 0.8), 'rx="35"') +
+        rc(-w * 0.42, -d * 0.3, w * 0.84, d * 0.76, c, 'rx="35"') +
+        rc(-w * 0.36, -d * 0.2, w * 0.22, d * 0.5, '#f6f2ea', 'rx="45"')
+      );
+    case 'ottoman':
+      return (
+        rc(x, y, w, d, c, `rx="${m * 0.18}"`) +
+        rc(-w * 0.4, -d * 0.4, w * 0.8, d * 0.8, 'none', `rx="${m * 0.12}" ${DASH}`) +
+        ec(0, 0, m * 0.025, m * 0.025, shade(c, 0.75))
+      );
+    case 'bench':
+      return (
+        rc(x, y, w, d, shade(c, 0.7), 'rx="15"') +
+        rc(-w * 0.47, -d * 0.43, w * 0.94, d * 0.86, c, 'rx="40"') +
+        ln(0, -d * 0.43, 0, d * 0.43, DASH)
+      );
+    case 'chest':
+    case 'filingcabinet':
+      return (
+        rc(x, y, w, d, c) +
+        ln(x, d * 0.34, w / 2, d * 0.34) +
+        rc(-w * 0.18, d * 0.39, w * 0.36, d * 0.04, shade(c, 0.55))
+      );
+    case 'pantry':
+      return (
+        rc(x, y, w, d, c) +
+        ln(0, y, 0, d / 2) +
+        ln(x, d * 0.4, w / 2, d * 0.4) +
+        rc(-w * 0.12, d * 0.25, w * 0.04, d * 0.16, '#777') +
+        rc(w * 0.08, d * 0.25, w * 0.04, d * 0.16, '#777')
+      );
+    case 'displaycabinet':
+      return (
+        rc(x, y, w, d, c) +
+        rc(-w * 0.43, -d * 0.4, w * 0.86, d * 0.8, '#dce9e7', 'fill-opacity=".65"') +
+        ln(-w * 0.4, d * 0.36, w * 0.4, -d * 0.36, DASH)
+      );
+    case 'coatrack': {
+      let s = ec(0, 0, w * 0.35, d * 0.35, c);
+      for (let i = 0; i < 6; i++) {
+        const a = (i * Math.PI) / 3,
+          px = Math.cos(a) * w * 0.44,
+          py = Math.sin(a) * d * 0.44;
+        s += ln(0, 0, px, py) + ec(px, py, w * 0.04, d * 0.04, shade(c, 0.7));
+      }
+      return s;
+    }
+    case 'mirror':
+      return (
+        rc(x, y, w, d, 'none', DASH) +
+        rc(x, d * 0.24, w, d * 0.12, c) +
+        rc(-w * 0.44, d * 0.31, w * 0.88, d * 0.04, '#cfe6ef') +
+        ln(-w * 0.38, d * 0.2, -w * 0.38, -d / 2) +
+        ln(w * 0.38, d * 0.2, w * 0.38, -d / 2)
+      );
+    case 'screen':
+      return `<polyline points="${x},${d * 0.4} ${-w / 6},${-d * 0.4} ${w / 6},${d * 0.4} ${w / 2},${-d * 0.4}" fill="none" stroke="${c}" stroke-width="3" vector-effect="non-scaling-stroke"/>`;
+    case 'recliner':
+      return (
+        furnSVG('armchair', w, d * 0.72, c) +
+        rc(-w * 0.36, d * 0.28, w * 0.72, d * 0.22, shade(c, 0.92), 'rx="35"')
+      );
+    case 'nestingtable':
+      return (
+        ec(-w * 0.18, -d * 0.08, w * 0.32, d * 0.42, c) +
+        ec(w * 0.25, d * 0.18, w * 0.25, d * 0.32, shade(c, 0.78))
+      );
+    case 'barcart':
+      return (
+        rc(-w * 0.44, y, w * 0.88, d, c, 'rx="20"') +
+        rc(-w * 0.38, -d * 0.4, w * 0.76, d * 0.8, 'none') +
+        ln(-w * 0.49, -d * 0.35, -w * 0.49, d * 0.35) +
+        ec(w * 0.22, 0, w * 0.08, d * 0.14, '#f5eee1')
+      );
+    case 'microwave':
+      return (
+        rc(x, y, w, d, c, 'rx="20"') +
+        rc(-w * 0.44, d * 0.3, w * 0.64, d * 0.16, '#293941') +
+        rc(w * 0.3, d * 0.33, w * 0.12, d * 0.09, '#777')
+      );
+    case 'winecooler':
+      return (
+        rc(x, y, w, d, c) +
+        rc(-w * 0.42, -d * 0.4, w * 0.84, d * 0.8, '#a9c6c9') +
+        [-0.26, 0, 0.26].map((k) => ec(k * w, 0, w * 0.09, d * 0.28, '#657b56')).join('')
+      );
+    case 'laundrytower':
+      return (
+        furnSVG('washer', w, d, c) +
+        rc(-w * 0.42, -d * 0.38, w * 0.26, d * 0.16, shade(c, 0.65)) +
+        rc(w * 0.16, -d * 0.38, w * 0.26, d * 0.16, shade(c, 0.65))
+      );
+    case 'dryingrack': {
+      let s = rc(-w * 0.48, -d * 0.46, w * 0.96, d * 0.92, 'none');
+      for (let i = 1; i < 8; i++)
+        s += ln(-w * 0.46, d * (-0.46 + i * 0.115), w * 0.46, d * (-0.46 + i * 0.115));
+      return s;
+    }
+    case 'laundrybasket':
+      return (
+        rc(x, y, w, d, c, `rx="${m * 0.15}"`) +
+        rc(-w * 0.4, -d * 0.4, w * 0.8, d * 0.8, shade(c, 0.65), `rx="${m * 0.1}"`) +
+        rc(-w * 0.34, -d * 0.28, w * 0.68, d * 0.54, '#ede6dc', 'rx="40"')
+      );
+    case 'lounger':
+      return (
+        rc(x, y, w, d, shade(c, 0.7), 'rx="20"') +
+        rc(-w * 0.44, -d * 0.45, w * 0.88, d * 0.9, c, 'rx="30"') +
+        ln(-w * 0.44, -d * 0.1, w * 0.44, -d * 0.1) +
+        rc(-w * 0.34, -d * 0.4, w * 0.68, d * 0.16, '#f4eddf', 'rx="35"')
+      );
+    case 'planterbox':
+      return (
+        rc(x, y, w, d, c) +
+        rc(-w * 0.44, -d * 0.36, w * 0.88, d * 0.72, '#6c5943') +
+        [-0.3, 0, 0.3]
+          .map(
+            (k) =>
+              `<g transform="translate(${k * w} 0)">${furnSVG('plant', w * 0.3, d * 0.8, '#8fa781')}</g>`,
+          )
+          .join('')
+      );
+    case 'standingdesk':
+      return (
+        furnSVG('desk', w, d, c) +
+        rc(w * 0.3, d * 0.3, w * 0.12, d * 0.1, '#394a4c') +
+        ln(-w * 0.32, -d * 0.42, -w * 0.32, d * 0.42, DASH) +
+        ln(w * 0.32, -d * 0.42, w * 0.32, d * 0.42, DASH)
+      );
+    case 'exercisebike':
+      return (
+        ln(0, -d * 0.42, 0, d * 0.42) +
+        rc(-w * 0.4, -d * 0.42, w * 0.8, d * 0.05, c) +
+        rc(-w * 0.4, d * 0.37, w * 0.8, d * 0.05, c) +
+        rc(-w * 0.14, -d * 0.16, w * 0.28, d * 0.55, shade(c, 0.75), 'rx="30"') +
+        rc(-w * 0.28, d * 0.12, w * 0.56, d * 0.24, c, 'rx="60"') +
+        ln(-w * 0.42, -d * 0.3, w * 0.42, -d * 0.3)
+      );
+    case 'petbed':
+      return (
+        ec(0, 0, w / 2, d / 2, shade(c, 0.78)) +
+        ec(0, 0, w * 0.36, d * 0.34, c) +
+        pa(`M${-w * 0.15} ${d * 0.42}Q0 ${d * 0.2} ${w * 0.15} ${d * 0.42}`, 'none')
+      );
     default:
       return rc(x, y, w, d, c);
   }

@@ -257,6 +257,8 @@ export function demoProject(): Project {
       ...wallRect(r.rect, i),
       id: `slide${i}`,
       type: 'door' as const,
+      doorStyle: 'sliding' as const,
+      slideOpen: 0,
       color: '#b99b77',
     })),
   ];
@@ -281,5 +283,22 @@ export function parseProject(data: unknown): Project {
     }
     return projectSchema.parse(p);
   }
-  return projectSchema.parse(data);
+  const p = projectSchema.parse(data);
+  // Early v2 samples lost the sliding-door flag. Repair only the unchanged
+  // sample openings; an explicit style or edited geometry belongs to the user.
+  SLIDES.forEach((slide, i) => {
+    const original = wallRect(slide.rect, i);
+    const opening = p.openings.find((o) => o.id === `slide${i}`);
+    if (
+      opening?.type === 'door' &&
+      opening.doorStyle === undefined &&
+      opening.width === original.width &&
+      opening.a.every((v, index) => v === original.a[index]) &&
+      opening.b.every((v, index) => v === original.b[index])
+    ) {
+      opening.doorStyle = 'sliding';
+      opening.slideOpen ??= 0;
+    }
+  });
+  return p;
 }

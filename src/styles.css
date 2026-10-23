@@ -866,6 +866,14 @@ h2 {
   flex-wrap: wrap;
   gap: 5px;
 }
+.furniture-search {
+  margin-bottom: 12px;
+}
+.furniture-empty {
+  padding: 0 20px;
+  font-size: 12px;
+  color: var(--muted);
+}
 .category-tabs button {
   font-size: 10px;
   border: 1px solid var(--line);

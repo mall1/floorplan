@@ -23,7 +23,18 @@ import { joinWallAxes } from '../model/architecture';
 import type { DeviceKind, Tool, UtilityKind } from '../model/types';
 export default function Library({ onClose }: { onClose: () => void }) {
   const s = useStudio(),
-    [category, setCategory] = useState('卧室');
+    [category, setCategory] = useState('卧室'),
+    [search, setSearch] = useState('');
+  const query = search.trim().toLowerCase();
+  const furnitureItems = LIB.flatMap((group) =>
+    group.items
+      .filter((item) =>
+        query
+          ? `${group.cat} ${item[0]} ${item[1]}`.toLowerCase().includes(query)
+          : category === '全部' || group.cat === category,
+      )
+      .map((item) => ({ category: group.cat, item })),
+  );
   const tools: { id: Tool; name: string; Icon: typeof Square }[] = [
     { id: 'select', name: '选择 / 编辑', Icon: MousePointer2 },
     { id: 'rectangle', name: '矩形房间', Icon: RectangleHorizontal },
@@ -85,23 +96,40 @@ export default function Library({ onClose }: { onClose: () => void }) {
       {s.workspace === 'furniture' && (
         <>
           <Section title="家具分类">
+            <label className="field furniture-search">
+              <span>搜索家具</span>
+              <input
+                type="search"
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder="搜索全部分类，如高低床、晾衣架"
+              />
+            </label>
             <div className="category-tabs">
-              {LIB.map((g) => (
+              {['全部', ...LIB.map((g) => g.cat)].map((cat) => (
                 <button
-                  key={g.cat}
-                  className={category === g.cat ? 'active' : ''}
-                  onClick={() => setCategory(g.cat)}
+                  key={cat}
+                  className={!query && category === cat ? 'active' : ''}
+                  aria-pressed={!query && category === cat}
+                  onClick={() => {
+                    setCategory(cat);
+                    setSearch('');
+                  }}
                 >
-                  {g.cat}
+                  {cat}
                 </button>
               ))}
             </div>
             <p className="help">点击添加到选中房间中央，或拖拽到画布；选择后可以调整尺寸和旋转。</p>
+            <p className="help" role="status">
+              {query ? '搜索结果' : category} · {furnitureItems.length} 款
+            </p>
           </Section>
+          {!furnitureItems.length && <p className="furniture-empty">没有找到匹配的家具，试试其他名称。</p>}
           <div className="furniture-grid">
-            {LIB.find((g) => g.cat === category)?.items.map((it, i) => (
+            {furnitureItems.map(({ category: group, item: it }) => (
               <button
-                key={i}
+                key={`${group}-${it[1]}`}
                 draggable
                 onDragStart={(e) => {
                   e.dataTransfer.setData('application/furniture', JSON.stringify(it));

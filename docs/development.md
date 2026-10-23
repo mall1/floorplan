@@ -70,6 +70,7 @@ src/
   model/shafts.ts            扣除烟道占地的房间净面积
   model/walkthrough.ts       安全出生点、碰撞和滑动
   render/architecture-models.ts  门套、门扇五金、平窗和飘窗模型
+  render/furniture-extra.js  新增家具模型，横向尺寸随家具宽深调整
   model/flooring.ts           2D / 3D 共用排布算法
   model/recognition.ts        矩形分区、实心/空心墙、门洞、窗框和房间识别
   workers/                   后台图片识别

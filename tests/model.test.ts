@@ -17,11 +17,15 @@ import { imagePoint } from '../src/model/files';
 import type { Point } from '../src/model/types';
 import { LIB } from '../src/data/original';
 import { buildFurniture, disposeModelMaterials } from '../src/render/furniture-models';
+import { furnSVG } from '../src/render/furniture-svg';
 import * as THREE from 'three';
 describe('retained furniture library', () => {
   it('builds every catalog model without missing global dependencies or invalid bounds', () => {
     for (const group of LIB)
       for (const item of group.items) {
+        const svg = furnSVG(item[0], item[2], item[3], item[4]);
+        expect(svg, String(item[1])).not.toMatch(/NaN|Infinity|undefined/);
+        expect(svg, String(item[1])).not.toBe(furnSVG('unknown', item[2], item[3], item[4]));
         const model = buildFurniture({
           id: 'test',
           type: item[0],
@@ -37,11 +41,31 @@ describe('retained furniture library', () => {
         expect([...box.min.toArray(), ...box.max.toArray()].every(Number.isFinite), String(item[0])).toBe(
           true,
         );
+        let meshCount = 0;
         model.traverse((node: THREE.Object3D) => {
-          if (node instanceof THREE.Mesh) node.geometry.dispose();
+          if (node instanceof THREE.Mesh) {
+            meshCount++;
+            node.geometry.dispose();
+          }
         });
+        expect(meshCount, String(item[1])).toBeGreaterThan(1);
       }
     disposeModelMaterials();
+  });
+  it('round trips every catalog entry with editable sizes, colors and rotation', () => {
+    const p = emptyProject();
+    p.furniture = LIB.flatMap((group) => group.items).map((item, i) => ({
+      id: `catalog-${i}`,
+      type: String(item[0]),
+      name: String(item[1]),
+      w: Number(item[2]) + 100,
+      d: Number(item[3]) + 50,
+      cx: i * 100,
+      cy: -(i + 1) * 100,
+      rot: 90,
+      color: '#aabbcc',
+    }));
+    expect(parseProject(JSON.parse(JSON.stringify(p)))).toEqual(p);
   });
 });
 describe('geometry and project files', () => {
@@ -50,6 +74,51 @@ describe('geometry and project files', () => {
     expect(sample.rooms.length).toBe(13);
     expect(sample.furniture.length).toBeGreaterThan(40);
     expect(parseProject(JSON.parse(JSON.stringify(sample)))).toEqual(sample);
+  });
+  it('uses sliding doors for both sample balconies and keeps interior doors hinged', () => {
+    const sample = demoProject();
+    for (const id of ['slide0', 'slide1']) {
+      expect(sample.openings.find((o) => o.id === id)).toMatchObject({
+        type: 'door',
+        doorStyle: 'sliding',
+        slideOpen: 0,
+      });
+    }
+    expect(
+      sample.openings.filter((o) => o.id.startsWith('door')).every((o) => o.doorStyle !== 'sliding'),
+    ).toBe(true);
+  });
+  it('repairs old sample balcony doors without modifying the input or losing their opening amount', () => {
+    const old = demoProject();
+    const balconies = old.openings.filter((o) => o.id.startsWith('slide'));
+    balconies.forEach((o) => {
+      delete o.doorStyle;
+    });
+    balconies[0].slideOpen = 35;
+    delete balconies[1].slideOpen;
+    const fixed = parseProject(old);
+    expect(fixed.openings.find((o) => o.id === 'slide0')).toMatchObject({
+      doorStyle: 'sliding',
+      slideOpen: 35,
+    });
+    expect(fixed.openings.find((o) => o.id === 'slide1')).toMatchObject({
+      doorStyle: 'sliding',
+      slideOpen: 0,
+    });
+    expect(balconies.every((o) => o.doorStyle === undefined)).toBe(true);
+    expect(parseProject(fixed)).toEqual(fixed);
+  });
+  it('preserves explicit door choices and edited openings during sample repair', () => {
+    const p = demoProject();
+    const first = p.openings.find((o) => o.id === 'slide0')!;
+    first.doorStyle = 'swing';
+    const second = p.openings.find((o) => o.id === 'slide1')!;
+    delete second.doorStyle;
+    second.a[0] += 100;
+    expect(parseProject(p)).toEqual(p);
+    second.a[0] -= 100;
+    second.type = 'window';
+    expect(parseProject(p)).toEqual(p);
   });
   it('rejects malformed / crossing rooms, unsafe SVG images and duplicate IDs', () => {
     expect(
