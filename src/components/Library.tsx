@@ -207,27 +207,43 @@ export default function Library({ onClose }: { onClose: () => void }) {
                 placeholder="例如：厨房专用回路"
               />
             </label>
+            {s.routeKind === 'power' && (
+              <label className="field">
+                <span>新线路用途</span>
+                <select
+                  aria-label="新线路用途"
+                  value={s.powerUse}
+                  onChange={(e) => s.setPowerUse(e.target.value as 'socket' | 'lighting' | 'ac')}
+                >
+                  <option value="socket">插座回路</option>
+                  <option value="lighting">开关 / 照明回路</option>
+                  <option value="ac">空调专用回路</option>
+                </select>
+              </label>
+            )}
             <p className="help">
               连续点击布线，默认水平 / 垂直走线；按 Alt 自由走线。双击或 Enter 完成，Esc
               取消。端点靠近设备时吸附。
             </p>
           </Section>
-          <Section title="插座、开关与用水点">
+          <Section title="插座、开关、灯座与设备点位">
             <div className="device-grid">
-              {Object.entries(DEVICE_KINDS).map(([key, v]) => (
-                <button
-                  key={key}
-                  className={s.tool === 'device' && s.deviceKind === key ? 'active' : ''}
-                  onClick={() => {
-                    s.setDeviceKind(key as DeviceKind);
-                    s.setTool('device');
-                  }}
-                >
-                  <b style={{ color: v.color, borderColor: v.color }}>{v.symbol}</b>
-                  <span>{v.name}</span>
-                  <small>H {v.height} mm</small>
-                </button>
-              ))}
+              {Object.entries(DEVICE_KINDS)
+                .filter(([key]) => key !== 'water')
+                .map(([key, v]) => (
+                  <button
+                    key={key}
+                    className={s.tool === 'device' && s.deviceKind === key ? 'active' : ''}
+                    onClick={() => {
+                      s.setDeviceKind(key as DeviceKind);
+                      s.setTool('device');
+                    }}
+                  >
+                    <b style={{ color: v.color, borderColor: v.color }}>{v.symbol}</b>
+                    <span>{v.name}</span>
+                    <small>H {v.height} mm</small>
+                  </button>
+                ))}
             </div>
             <p className="help">选中类型后在画布点击放置；点位与管线可编辑高度、分组及位置。</p>
           </Section>

@@ -70,6 +70,9 @@ src/
   model/auto-layout.ts       按用途布置、配套家具朝向与碰撞约束
   model/auto-utilities.ts    房间水电模板、接入点复用、直角寻路和预览应用
   model/utility-connections.ts  管线端点联动、竖向连接与长度统计
+  model/utility-style.ts     冷热水兼容显示、点位样式及强电回路用途
+  render/utility-models.ts   阀门、插座、开关、灯座与空调设备的 3D 模型
+  model/room-topology.ts     相邻轮廓合并、隔墙缝隙连接、分割及内部墙段修正
   model/space-geometry.ts    旋转家具轮廓、多边形并集及差集面积
   model/space-analysis.ts    净地面、占地、活动和收纳面积与 CSV
   model/circulation.ts       动线场景、障碍网格、A* 与瓶颈定位
@@ -93,6 +96,8 @@ tests/
 户型几何、点位、管线、铺装和底图均存入带 `version: 2` 的方案。导入用 Zod 校验类型、范围、轮廓和重复 ID；历史记录只在一次操作完成时提交，拖动预览不逐帧写入存储。3D 组件负责释放几何、材质、贴图、事件和渲染循环。
 
 自动水电使用可选 `utilityLayout` 保存敷设方式、高度、系统及指定接入点；点位和管线的 `autoUtility` 标记记录房间、系统与模板键，支持幂等更新和手工内容保留。管线以 `startDeviceId` / `endDeviceId` 关联点位，统一提交时同步端点；手工编辑线路会解除关联及自动标记。旧方案不含这些字段仍可导入。预览仅保存在界面状态中，不写入 JSON，也不进入导出图片。单元和浏览器测试覆盖范围隔离、障碍避让、未知房间、失效源、重复生成、撤销、保存和 3D。
+
+空调沿用可选字段保存：`utilityLayout.acMode` 区分分体与中央冷媒系统，`Route.powerUse` 区分插座、照明和专用电源，`Device.acMode` 决定末端外形。新增冷媒 / 冷凝水系统和冷热水、空调设备类型均经过 Zod 校验，旧通用给水点继续兼容。识别候选编辑使用独立的最多 30 步会话历史；候选坐标仍为图像像素，几何运算与位置编辑在毫米坐标完成，导入时生成普通房间与独立墙体。新增隔墙在预览的 `extraWalls` 中保存，随候选一起导入，不写入长期方案元数据。
 
 ## 提交约定
 

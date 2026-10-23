@@ -18,6 +18,13 @@ async function saved(page: Page) {
 }
 const fixture = () => {
   const p = analysisFixture();
+  p.utilityLayout = {
+    mode: 'ceiling',
+    floorHeight: 50,
+    ceilingHeight: 2600,
+    systems: ['power', 'weak', 'cold', 'hot', 'drain'],
+    sources: {},
+  };
   p.rooms = p.rooms.slice(0, 2);
   p.rooms[1].kind = 'kitchen';
   p.openings = p.openings.slice(0, 2);

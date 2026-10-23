@@ -1,5 +1,6 @@
 import { useStudio } from './StudioContext';
-import { DEVICE_KINDS, ROUTE_KINDS } from '../model/presets';
+import DeviceSymbol from './DeviceSymbol';
+import { routeStyle } from '../model/utility-style';
 export default function UtilityPreviewOverlay() {
   const s = useStudio(),
     preview = s.utilityPreview;
@@ -20,7 +21,7 @@ export default function UtilityPreviewOverlay() {
           <polyline
             points={r.points.map((p) => p.join(',')).join(' ')}
             fill="none"
-            stroke={ROUTE_KINDS[r.kind].color}
+            stroke={routeStyle(r).color}
             strokeWidth={35}
             strokeDasharray="90 40"
           />
@@ -31,10 +32,9 @@ export default function UtilityPreviewOverlay() {
           <title>
             {d.name} · H {d.height} mm
           </title>
-          <circle r={100} fill="#fffdf7" stroke={ROUTE_KINDS[d.autoUtility!.system].color} strokeWidth={25} />
-          <text textAnchor="middle" y={45} fontSize={125} fill={ROUTE_KINDS[d.autoUtility!.system].color}>
-            {DEVICE_KINDS[d.kind].symbol}
-          </text>
+          <g transform="scale(.85)">
+            <DeviceSymbol device={d} />
+          </g>
         </g>
       ))}
     </g>

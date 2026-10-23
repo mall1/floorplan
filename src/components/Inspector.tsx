@@ -4,6 +4,7 @@ import RoomCalibrationControls from './RoomCalibrationControls';
 import WallAreaPanel from './WallAreaPanel';
 import RoomPlanning from './RoomPlanning';
 import { detachUtilityRoute, routeLengths } from '../model/utility-connections';
+import { deviceStyle, resolvedDeviceKind, routeStyle } from '../model/utility-style';
 import { NumberField, Section, TextField } from './Fields';
 import {
   allWalls,
@@ -21,7 +22,7 @@ import { usableArea } from '../model/shafts';
 import { DEVICE_KINDS, ROUTE_KINDS } from '../model/presets';
 import { PIPE_DIAMETERS } from '../model/pipe-presets';
 import { download } from '../model/files';
-import type { Point } from '../model/types';
+import type { Point, DeviceKind, Route } from '../model/types';
 export default function Inspector({ onClose }: { onClose: () => void }) {
   const s = useStudio(),
     p = s.project,
@@ -85,7 +86,7 @@ export default function Inspector({ onClose }: { onClose: () => void }) {
     for (const r of p.routes)
       rows.push([
         '管线',
-        ROUTE_KINDS[r.kind].name,
+        routeStyle(r).name,
         (length(r.points) / 1000).toFixed(2),
         'm',
         `${r.circuit};管径${r.diameter}`,
@@ -94,7 +95,7 @@ export default function Inspector({ onClose }: { onClose: () => void }) {
     for (const r of p.routes.filter((r) => routeLengths(p, r).vertical > 0))
       rows.push([
         '管线竖向段',
-        ROUTE_KINDS[r.kind].name,
+        routeStyle(r).name,
         routeLengths(p, r).vertical.toFixed(2),
         'm',
         r.circuit,
@@ -108,7 +109,7 @@ export default function Inspector({ onClose }: { onClose: () => void }) {
         '个',
         d.kind === 'pipe'
           ? `外径Ø${d.diameter ?? 110};${d.pipeSystem === 'drain' ? '排水' : d.pipeSystem === 'water' ? '给水' : '用途待核对'};${d.circuit}`
-          : d.circuit,
+          : `${deviceStyle(d).name};${d.circuit}`,
         d.height,
       ]);
     for (const o of p.openings.filter((o) => o.type === 'threshold'))
@@ -429,7 +430,53 @@ export default function Inspector({ onClose }: { onClose: () => void }) {
         </Section>
       )}
       {device && (
-        <Section title={DEVICE_KINDS[device.kind].name}>
+        <Section title={deviceStyle(device).name}>
+          {device.kind !== 'pipe' && (
+            <label className="field">
+              <span>点位类型</span>
+              <select
+                aria-label="点位类型"
+                value={resolvedDeviceKind(device)}
+                onChange={(e) =>
+                  s.commit((d) => {
+                    const item = d.devices.find((v) => v.id === device.id)!;
+                    item.kind = e.target.value as DeviceKind;
+                    item.name = DEVICE_KINDS[item.kind].name;
+                    delete item.autoUtility;
+                    for (const r of d.routes.filter(
+                      (r) => r.startDeviceId === item.id || r.endDeviceId === item.id,
+                    ))
+                      detachUtilityRoute(r);
+                  })
+                }
+              >
+                {Object.entries(DEVICE_KINDS)
+                  .filter(([k]) => k !== 'water' && k !== 'pipe')
+                  .map(([k, v]) => (
+                    <option key={k} value={k}>
+                      {v.name}
+                    </option>
+                  ))}
+              </select>
+            </label>
+          )}
+          {['acindoor', 'acoutdoor'].includes(device.kind) && (
+            <label className="field">
+              <span>空调设备形式</span>
+              <select
+                aria-label="空调设备形式"
+                value={device.acMode ?? 'split'}
+                onChange={(e) =>
+                  s.commit((d) => {
+                    d.devices.find((v) => v.id === device.id)!.acMode = e.target.value as 'split' | 'central';
+                  })
+                }
+              >
+                <option value="split">分体空调</option>
+                <option value="central">中央空调</option>
+              </select>
+            </label>
+          )}
           {device.kind === 'pipe' && (
             <>
               <label className="field">
@@ -532,7 +579,25 @@ export default function Inspector({ onClose }: { onClose: () => void }) {
       )}
       {route && (
         <>
-          <Section title={ROUTE_KINDS[route.kind].name}>
+          <Section title={routeStyle(route).name}>
+            {route.kind === 'power' && (
+              <label className="field">
+                <span>强电回路用途</span>
+                <select
+                  aria-label="强电回路用途"
+                  value={route.powerUse ?? 'socket'}
+                  onChange={(e) =>
+                    s.commit((d) => {
+                      d.routes.find((r) => r.id === route.id)!.powerUse = e.target.value as Route['powerUse'];
+                    })
+                  }
+                >
+                  <option value="socket">插座回路</option>
+                  <option value="lighting">开关 / 照明回路</option>
+                  <option value="ac">空调专用回路</option>
+                </select>
+              </label>
+            )}
             <TextField
               label="回路 / 管路分组"
               value={route.circuit}

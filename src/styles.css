@@ -929,6 +929,43 @@ h2 {
   gap: 4px;
   margin: 12px 0;
 }
+.utility-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  font-size: 11px;
+  margin: 10px 0;
+}
+.candidate-editor {
+  border: 1px solid #ccdcd4;
+  border-radius: 8px;
+  background: #f4f8f4;
+  padding: 10px;
+  margin: 12px 0;
+  min-width: 0;
+}
+.candidate-editor .wide {
+  margin: 7px 0;
+}
+.candidate-editor summary {
+  font-size: 11px;
+  cursor: pointer;
+  margin: 10px 0;
+  color: var(--green);
+}
+.candidate-editor .check-row {
+  font-size: 11px;
+  align-items: flex-start;
+}
+.candidate-editor .fields button {
+  min-width: 0;
+  padding: 8px 4px;
+  font-size: 11px;
+}
+.candidate-vertices {
+  max-height: 230px;
+  overflow: auto;
+}
 .utility-systems .check-row {
   margin: 3px 0;
   gap: 5px;
@@ -1220,7 +1257,8 @@ h2 {
   border-color: #a5b996;
 }
 .candidate {
-  display: flex;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   gap: 5px;
   margin: 7px 0;

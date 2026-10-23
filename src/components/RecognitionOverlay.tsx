@@ -52,6 +52,19 @@ export default function RecognitionOverlay({
             />
           );
         })}
+      {(result.extraWalls ?? []).map((w, i) => (
+        <line
+          key={`manual-wall-${i}`}
+          data-testid="manual-recognition-wall"
+          x1={w.a[0]}
+          y1={w.a[1]}
+          x2={w.b[0]}
+          y2={w.b[1]}
+          stroke="#d38c38"
+          strokeWidth={w.width}
+          strokeOpacity={0.65}
+        />
+      ))}
       {result.shafts.map((o, i) => (
         <g key={o.id} data-testid="recognized-shaft" opacity={o.selected ? 1 : 0.45}>
           <rect

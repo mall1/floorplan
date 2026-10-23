@@ -41,17 +41,25 @@ export const ROUTE_KINDS: Record<UtilityKind, { name: string; color: string; dia
   drain: { name: '排水管', color: '#708174', diameter: 50 },
   power: { name: '强电线路', color: '#bf5c4d', diameter: 20 },
   weak: { name: '弱电网线', color: '#8b75b6', diameter: 16 },
+  refrigerant: { name: '空调冷媒管组', color: '#087f83', diameter: 16 },
+  condensate: { name: '空调冷凝水管', color: '#469e9b', diameter: 25 },
 };
 export const DEVICE_KINDS: Record<
   DeviceKind,
   { name: string; symbol: string; height: number; color: string }
 > = {
   socket: { name: '五孔插座', symbol: '插', height: 300, color: '#b6684d' },
-  switch: { name: '照明开关', symbol: '开', height: 1300, color: '#b6684d' },
+  switch: { name: '照明开关', symbol: '开', height: 1300, color: '#b38523' },
   light: { name: '灯位', symbol: '灯', height: 2600, color: '#b7924e' },
   water: { name: '给水点', symbol: '水', height: 500, color: '#298cba' },
+  coldwater: { name: '冷水点', symbol: '冷', height: 500, color: '#298cba' },
+  hotwater: { name: '热水点', symbol: '热', height: 500, color: '#df5845' },
   drain: { name: '地漏', symbol: '排', height: 0, color: '#708174' },
   network: { name: '网络插座', symbol: '网', height: 300, color: '#8b75b6' },
   panel: { name: '配电箱', symbol: '箱', height: 1600, color: '#ae5750' },
   pipe: { name: '竖管', symbol: '○', height: 2800, color: '#708174' },
+  acindoor: { name: '空调室内机', symbol: '内', height: 2300, color: '#087f83' },
+  acoutdoor: { name: '空调室外机', symbol: '外', height: 500, color: '#365f73' },
+  acdrain: { name: '冷凝水接入点', symbol: '凝', height: 0, color: '#469e9b' },
+  acsocket: { name: '空调专用插座', symbol: '空', height: 2200, color: '#466ea9' },
 };

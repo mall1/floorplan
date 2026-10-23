@@ -6,8 +6,9 @@ import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { useStudio } from './StudioContext';
 import { allWalls, bounds, distance, projectBounds, wallSegments, openingPolygon } from '../model/geometry';
 import { floorFor, tilePolygons } from '../model/flooring';
-import { DEVICE_KINDS, ROUTE_KINDS } from '../model/presets';
 import { routeElevations } from '../model/utility-connections';
+import { buildUtilityDevice } from '../render/utility-models';
+import { routeStyle } from '../model/utility-style';
 import { buildFurniture, disposeModelMaterials } from '../render/furniture-models';
 import { buildOpening } from '../render/architecture-models';
 import { resolvedOpening, wallFootprint } from '../model/architecture';
@@ -514,29 +515,18 @@ export default function Scene3D() {
               v1.distanceTo(v2),
               8,
             ),
-            new THREE.MeshStandardMaterial({ color: ROUTE_KINDS[r.kind].color }),
+            new THREE.MeshStandardMaterial({ color: routeStyle(r).color }),
           );
           mesh.position.copy(v1).add(v2).multiplyScalar(0.5);
           mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), v2.sub(v1).normalize());
           e.root.add(mesh);
         }
       });
-      p.devices.forEach((d) => {
-        const pipe = d.kind === 'pipe',
-          height = Math.min(d.height / 1000, pipe && cut ? 1 : 10);
-        const mesh = new THREE.Mesh(
-          pipe
-            ? new THREE.CylinderGeometry((d.diameter ?? 110) / 2000, (d.diameter ?? 110) / 2000, height, 24)
-            : new THREE.BoxGeometry(0.15, 0.15, 0.07),
-          new THREE.MeshStandardMaterial({
-            color: d.autoUtility ? ROUTE_KINDS[d.autoUtility.system].color : DEVICE_KINDS[d.kind].color,
-          }),
-        );
-        mesh.position.set(d.x / 1000, pipe ? height / 2 : d.height / 1000 + 0.08, d.y / 1000);
-        mesh.userData.deviceId = d.id;
-        mesh.rotation.y = (-d.rotation * Math.PI) / 180;
-        e.root.add(mesh);
-      });
+      p.devices.forEach((d) =>
+        e.root.add(
+          buildUtilityDevice(d.kind === 'pipe' && cut ? { ...d, height: Math.min(d.height, 1000) } : d),
+        ),
+      );
     }
   }, [s.project, s.layers.furniture, s.layers.utilities, cut]);
   useEffect(() => {

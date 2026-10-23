@@ -3,6 +3,9 @@ import { useStudio } from './StudioContext';
 import RecognitionOverlay from './RecognitionOverlay';
 import SpaceAnalysisOverlay from './SpaceAnalysisOverlay';
 import UtilityPreviewOverlay from './UtilityPreviewOverlay';
+import DeviceSymbol from './DeviceSymbol';
+import CandidateEditOverlay from './CandidateEditOverlay';
+import { deviceStyle, routeStyle } from '../model/utility-style';
 import { detachUtilityRoute, syncUtilityConnections } from '../model/utility-connections';
 import {
   allWalls,
@@ -23,7 +26,7 @@ import { resolvedOpening, wallFootprint } from '../model/architecture';
 import { usableArea } from '../model/shafts';
 import { floorFor, floorInFrame, tilePolygons } from '../model/flooring';
 import { DEVICE_KINDS, ROUTE_KINDS } from '../model/presets';
-import { imagePoint } from '../model/files';
+import { imagePoint, imageLocalPoint } from '../model/files';
 import { furnSVG } from '../render/furniture-svg';
 import type { Point, Project, Selection } from '../model/types';
 const points = (p: Point[]) => p.map((v) => v.join(',')).join(' ');
@@ -91,6 +94,7 @@ export default function PlanCanvas({
     p = preview || s.project,
     wallList = useMemo(() => allWalls(p), [p]),
     openingList = useMemo(() => p.openings.map((o) => resolvedOpening(o, wallList)), [p.openings, wallList]);
+  const candidateDrag = useRef<{ kind: 'poly' | 'line'; index: number } | null>(null);
   const radius = svg.current?.getScreenCTM() ? 7 / svg.current.getScreenCTM()!.a : 100;
   const local = (e: { clientX: number; clientY: number }): Point => {
     const pt = new DOMPoint(e.clientX, e.clientY).matrixTransform(svg.current!.getScreenCTM()!.inverse());
@@ -151,6 +155,7 @@ export default function PlanCanvas({
         d.routes.push({
           id,
           kind: s.routeKind,
+          ...(s.routeKind === 'power' ? { powerUse: s.powerUse } : {}),
           points: clean,
           circuit: s.circuit || '未分组',
           diameter: ROUTE_KINDS[s.routeKind].diameter,
@@ -169,6 +174,8 @@ export default function PlanCanvas({
         setSpace(true);
       }
       if (e.key === 'Escape') {
+        s.setCandidateEdit(null);
+        candidateDrag.current = null;
         setDraft([]);
         setPreview(null);
         drag.current = null;
@@ -335,6 +342,33 @@ export default function PlanCanvas({
       drag.current = { start: raw, before: p, selection: null, pan: { ...view } };
       return;
     }
+    if (p.reference && s.candidateEdit) {
+      const target = (e.target as Element).closest(
+        '[data-candidate-vertex],[data-candidate-line]',
+      ) as SVGElement | null;
+      if (target) {
+        candidateDrag.current = {
+          kind: target.dataset.candidateVertex !== undefined ? 'poly' : 'line',
+          index: Number(target.dataset.candidateVertex ?? target.dataset.candidateLine),
+        };
+        return;
+      }
+      if (s.candidateEdit.drawing) {
+        const at = imageLocalPoint(p.reference, raw);
+        s.setCandidateEdit((v) =>
+          v ? { ...v, line: v.line.length === 1 ? [v.line[0], at] : [at], drawing: v.line.length !== 1 } : v,
+        );
+        return;
+      }
+    }
+    if (p.reference && s.tool === 'select') {
+      const target = (e.target as Element).closest('[data-candidate-id]') as SVGElement | null;
+      const c = s.candidates.find((c) => c.id === target?.dataset.candidateId);
+      if (c) {
+        s.setCandidateEdit({ id: c.id, poly: structuredClone(c.poly), line: [], drawing: false });
+        return;
+      }
+    }
     if (s.tool === 'floor-move' || s.tool === 'floor-origin') {
       const room = [...p.rooms]
         .reverse()
@@ -373,6 +407,12 @@ export default function PlanCanvas({
   };
   const onMove = (e: React.PointerEvent<SVGSVGElement>) => {
     const raw = local(e);
+    if (candidateDrag.current && p.reference) {
+      const { kind, index } = candidateDrag.current,
+        at = imageLocalPoint(p.reference, e.altKey ? raw : snapPoint(raw));
+      s.setCandidateEdit((v) => (v ? { ...v, [kind]: v[kind].map((p, i) => (i === index ? at : p)) } : v));
+      return;
+    }
     setHover(snap(raw, e));
     const d = drag.current;
     if (!d) return;
@@ -439,6 +479,7 @@ export default function PlanCanvas({
     setPreview(next);
   };
   const onUp = () => {
+    candidateDrag.current = null;
     const d = drag.current;
     drag.current = null;
     setPreview(null);
@@ -484,11 +525,13 @@ export default function PlanCanvas({
       onPointerMove={onMove}
       onPointerUp={onUp}
       onPointerCancel={() => {
+        candidateDrag.current = null;
         drag.current = null;
         setPreview(null);
       }}
       onContextMenu={(e) => e.preventDefault()}
       onDoubleClick={(e) => {
+        if (s.candidateEdit) return;
         if (s.tool === 'polygon' || s.tool === 'route') finish();
         else if (s.tool === 'select') {
           const at = local(e);
@@ -850,22 +893,21 @@ export default function PlanCanvas({
           {p.routes.map((r) => (
             <g key={r.id} data-kind="route" data-id={r.id}>
               <title>
-                {r.circuit} · {ROUTE_KINDS[r.kind].name} · 水平段 H {r.height} mm
+                {r.circuit} · {routeStyle(r).name} · 水平段 H {r.height} mm
               </title>
               <polyline points={points(r.points)} fill="none" stroke="transparent" strokeWidth={radius * 3} />
               <polyline
                 points={points(r.points)}
                 fill="none"
-                stroke={ROUTE_KINDS[r.kind].color}
+                stroke={routeStyle(r).color}
+                strokeDasharray={routeStyle(r).dash ?? (r.kind === 'weak' ? '90 60' : undefined)}
                 strokeWidth={selected?.id === r.id ? 55 : 35}
-                strokeDasharray={r.kind === 'weak' ? '90 60' : undefined}
                 strokeLinejoin="round"
               />
             </g>
           ))}
           {p.devices.map((d) => {
-            const kind = DEVICE_KINDS[d.kind],
-              color = d.autoUtility ? ROUTE_KINDS[d.autoUtility.system].color : kind.color;
+            const kind = deviceStyle(d);
             if (d.kind === 'pipe')
               return (
                 <g
@@ -910,26 +952,7 @@ export default function PlanCanvas({
                 <title>
                   {d.name} · H {d.height} mm
                 </title>
-                <rect
-                  x="-130"
-                  y="-130"
-                  width="260"
-                  height="260"
-                  rx={d.kind === 'light' ? 130 : 30}
-                  fill="#fffdf8"
-                  stroke={selected?.id === d.id ? '#203d38' : color}
-                  strokeWidth={25}
-                />
-                <text
-                  textAnchor="middle"
-                  y="55"
-                  fontSize="150"
-                  fill={color}
-                  fontFamily="sans-serif"
-                  pointerEvents="none"
-                >
-                  {kind.symbol}
-                </text>
+                <DeviceSymbol device={d} selected={selected?.id === d.id} />
               </g>
             );
           })}
@@ -985,7 +1008,7 @@ export default function PlanCanvas({
             const poly = c.poly.map((pt) => imagePoint(p.reference!, pt)),
               at = center(poly);
             return (
-              <g key={c.id} pointerEvents="none">
+              <g key={c.id} data-editor-only="true" data-candidate-id={c.id} style={{ cursor: 'pointer' }}>
                 <polygon
                   points={points(poly)}
                   fill="#54ad9b"
@@ -1000,6 +1023,7 @@ export default function PlanCanvas({
               </g>
             );
           })}
+      <CandidateEditOverlay radius={radius} />
       {s.workspace === 'flooring' &&
         activeRoom &&
         (() => {

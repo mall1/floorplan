@@ -62,7 +62,12 @@ export function inferRoomKind(p: Project, room: Pick<Room, 'name' | 'poly'>): Ro
     aspect = Math.max(b.w, b.h) / Math.max(1, Math.min(b.w, b.h));
   if (p.shafts.some((s) => s.poly.some(close)) && a < 20)
     return { kind: 'kitchen', confidence: 'medium', reason: '邻近烟道或管井，可能是厨房，需核对' };
-  if (p.devices.some((d) => ['water', 'drain', 'pipe'].includes(d.kind) && close([d.x, d.y])) && a < 12)
+  if (
+    p.devices.some(
+      (d) => ['water', 'coldwater', 'hotwater', 'drain', 'pipe'].includes(d.kind) && close([d.x, d.y]),
+    ) &&
+    a < 12
+  )
     return { kind: 'bathroom', confidence: 'medium', reason: '小空间内有用水或排水点，也可能是洗衣区' };
   if (p.openings.some((o) => o.type === 'railing' && close([(o.a[0] + o.b[0]) / 2, (o.a[1] + o.b[1]) / 2])))
     return { kind: 'balcony', confidence: 'medium', reason: '邻近开放护栏，可能是阳台' };

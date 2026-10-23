@@ -54,6 +54,13 @@ export function imagePoint(ref: ReferenceImage, p: Point): Point {
     ref.y + s * (p[0] * Math.sin(a) + p[1] * Math.cos(a)),
   ];
 }
+export function imageLocalPoint(ref: ReferenceImage, p: Point): Point {
+  const s = ref.width / ref.pixelWidth,
+    a = (ref.rotation * Math.PI) / 180,
+    x = (p[0] - ref.x) / s,
+    y = (p[1] - ref.y) / s;
+  return [x * Math.cos(a) + y * Math.sin(a), -x * Math.sin(a) + y * Math.cos(a)];
+}
 export async function pngFromSvg(svg: SVGSVGElement, name: string) {
   const clone = svg.cloneNode(true) as SVGSVGElement;
   clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');

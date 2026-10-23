@@ -28,6 +28,7 @@ const fixture = () => {
 };
 const settings = (value: Partial<UtilityLayoutSettings> = {}): UtilityLayoutSettings => ({
   ...structuredClone(DEFAULT_UTILITY_LAYOUT),
+  systems: ['power', 'weak', 'cold', 'hot', 'drain'],
   ...value,
 });
 function generate(p: Project, s = settings(), ids = p.rooms.map((r) => r.id)) {

@@ -92,7 +92,7 @@ export interface PipeRecognitionSettings {
   diameters: number[];
   tolerance: number;
 }
-export type UtilityKind = 'cold' | 'hot' | 'drain' | 'power' | 'weak';
+export type UtilityKind = 'cold' | 'hot' | 'drain' | 'power' | 'weak' | 'refrigerant' | 'condensate';
 export interface AutoUtilityTag {
   roomId: string;
   key: string;
@@ -105,6 +105,7 @@ export interface UtilityLayoutSettings {
   ceilingHeight: number;
   systems: UtilityKind[];
   sources: Partial<Record<UtilityKind, string>>;
+  acMode?: 'split' | 'central';
 }
 export interface Route {
   id: string;
@@ -116,8 +117,23 @@ export interface Route {
   autoUtility?: AutoUtilityTag;
   startDeviceId?: string;
   endDeviceId?: string;
+  powerUse?: 'socket' | 'lighting' | 'ac';
 }
-export type DeviceKind = 'socket' | 'switch' | 'light' | 'water' | 'drain' | 'network' | 'panel' | 'pipe';
+export type DeviceKind =
+  | 'socket'
+  | 'switch'
+  | 'light'
+  | 'water'
+  | 'coldwater'
+  | 'hotwater'
+  | 'drain'
+  | 'network'
+  | 'panel'
+  | 'pipe'
+  | 'acindoor'
+  | 'acoutdoor'
+  | 'acdrain'
+  | 'acsocket';
 export interface Device {
   id: string;
   kind: DeviceKind;
@@ -130,6 +146,7 @@ export interface Device {
   diameter?: number;
   pipeSystem?: 'drain' | 'water' | 'unknown';
   autoUtility?: AutoUtilityTag;
+  acMode?: 'split' | 'central';
 }
 export interface Furniture {
   id: string;
@@ -206,4 +223,5 @@ export interface Candidate {
   poly: Point[];
   selected: boolean;
   areaPixels: number;
+  boundary?: boolean;
 }

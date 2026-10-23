@@ -16,6 +16,8 @@ A browser-based floorplan editor for drawing rooms, recognizing reference images
 - **Room planning:** explainable room-use suggestions and manual overrides, with one-click furnishing by room type, standard/compact furniture and fill/replace modes.
 - **Space analysis:** net floor area, furniture footprint, remaining floor and storage footprint; daily, housework and guest routes with furniture bottleneck overlays.
 - **Automatic utilities:** room-aware device placement and orthogonal connections, floor/ceiling routing, selectable supply points, preview/apply and 3D risers. Regeneration updates generated routes while preserving manual work.
+- **Distinct services and HVAC:** separate cold/hot water points, socket/switch/light symbols and 3D models, power circuit purposes, split or central AC with outdoor units, refrigerant groups and condensate connections.
+- **Recognition corrections:** merge adjacent room candidates, drag or numerically edit vertices, draw and adjust a split line, preview both areas and undo candidate edits before importing.
 - **Floor layouts:** tile and wood presets, custom dimensions, grout, patterns and laying origins, with whole-home or per-room layouts.
 - **Quantity estimates:** flooring materials and costs, wall finish areas and wallpaper reference areas, with CSV exports.
 - **3D views:** orbit and top views, cutaway walls, day/night lighting, interactive doors and indoor walkthroughs.

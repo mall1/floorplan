@@ -13,6 +13,7 @@ import { effectiveRoomKind } from './room-types';
 import { nearPolygon } from './space-geometry';
 import { ROUTE_KINDS } from './presets';
 import { routeLengths, simplifyOrthogonal } from './utility-connections';
+import { resolvedDeviceKind } from './utility-style';
 import type {
   Device,
   DeviceKind,
@@ -29,7 +30,8 @@ export const DEFAULT_UTILITY_LAYOUT: UtilityLayoutSettings = {
   mode: 'ceiling',
   floorHeight: 50,
   ceilingHeight: 2600,
-  systems: ['power', 'weak', 'cold', 'hot', 'drain'],
+  systems: ['power', 'weak', 'cold', 'hot', 'drain', 'refrigerant', 'condensate'],
+  acMode: 'split',
   sources: {},
 };
 type Slot = {
@@ -62,10 +64,15 @@ export function sourceCandidates(p: Project, system: UtilityKind) {
           ? d.kind === 'network'
           : system === 'drain'
             ? d.kind === 'drain' || (d.kind === 'pipe' && d.pipeSystem === 'drain')
-            : d.kind === 'water' || (d.kind === 'pipe' && d.pipeSystem === 'water'),
+            : system === 'refrigerant'
+              ? d.kind === 'acoutdoor'
+              : system === 'condensate'
+                ? d.kind === 'acdrain' || (d.kind === 'pipe' && d.pipeSystem === 'drain')
+                : resolvedDeviceKind(d) === (system === 'hot' ? 'hotwater' : 'coldwater') ||
+                  (system === 'cold' && d.kind === 'pipe' && d.pipeSystem === 'water'),
     );
 }
-function slots(p: Project, room: Room): Slot[] {
+function slots(p: Project, room: Room, settings: UtilityLayoutSettings): Slot[] {
   const kind = effectiveRoomKind(p, room),
     b = bounds(room.poly),
     center = roomCenter(room.poly);
@@ -87,8 +94,8 @@ function slots(p: Project, room: Room): Slot[] {
   const socket = (key: string, name: string, at: Point, height = 300) =>
     add(key, name, 'socket', 'power', height, at);
   const wet = (key: string, name: string, at: Point, hot: boolean, drain = true, height = 500) => {
-    add(key + '-cold', name + '冷水', 'water', 'cold', height, at);
-    if (hot) add(key + '-hot', name + '热水', 'water', 'hot', height, [at[0] + 180, at[1]]);
+    add(key + '-cold', name + '冷水', 'coldwater', 'cold', height, at);
+    if (hot) add(key + '-hot', name + '热水', 'hotwater', 'hot', height, [at[0] + 180, at[1]]);
     if (drain) add(key + '-drain', name + '排水', 'drain', 'drain', 0, [at[0] - 180, at[1]]);
   };
   if (kind === 'unknown') return [];
@@ -169,6 +176,25 @@ function slots(p: Project, room: Room): Slot[] {
       break;
     default:
       socket('reserve', '清洁备用插座', fraction(0.5, 0.1));
+  }
+  if (
+    ['living', 'bedroom', 'study', 'dining'].includes(kind) &&
+    settings.systems.some((v) => v === 'refrigerant' || v === 'condensate')
+  ) {
+    const central = settings.acMode === 'central';
+    const at = item(['acwall', 'acfloor'], central ? center : fraction(0.85, 0.1));
+    const height = central ? settings.ceilingHeight : 2300;
+    add(
+      'ac-indoor',
+      central ? '中央空调室内末端' : '分体空调室内机',
+      'acindoor',
+      'refrigerant',
+      height,
+      at,
+      central,
+    );
+    add('ac-condensate', '空调冷凝水出口', 'acdrain', 'condensate', height, at, central);
+    add('ac-power', '空调专用电源', 'acsocket', 'power', central ? settings.ceilingHeight : 2200, at);
   }
   return out;
 }
@@ -259,6 +285,74 @@ export function utilityPath(grid: NavigationGrid, from: Point, to: Point): Point
   }
   return simplifyOrthogonal(pulled);
 }
+function exteriorAnchors(p: Project, room: Room) {
+  const walls = allWalls(p),
+    out: { inside: Point; outside: Point }[] = [];
+  for (let i = 0; i < room.poly.length; i++) {
+    const a = room.poly[i],
+      b = room.poly[(i + 1) % room.poly.length],
+      len = distance(a, b);
+    if (len < 600) continue;
+    for (const t of [0.25, 0.5, 0.75])
+      for (const sign of [-1, 1]) {
+        const mid: Point = [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
+        const width = Math.max(
+          room.boundary ? room.wallWidth : 0,
+          ...walls.filter((w) => projectPoint(mid, w.a, w.b).distance < w.width).map((w) => w.width),
+        );
+        const offset = width / 2 + 220,
+          dx = (-(b[1] - a[1]) / len) * offset * sign,
+          dy = ((b[0] - a[0]) / len) * offset * sign;
+        const inner: Point = [mid[0] + dx, mid[1] + dy],
+          outer: Point = [mid[0] - dx, mid[1] - dy];
+        if (
+          !inside(inner, room.poly) ||
+          p.rooms.some((r) => inside(outer, r.poly)) ||
+          p.shafts.some((s) => nearPolygon(inner, s.poly, 80) || nearPolygon(outer, s.poly, 80))
+        )
+          continue;
+        // Do not mistake a window bay or an internal boundary for an exterior connection.
+        if (
+          walls.some((w) => projectPoint(outer, w.a, w.b).distance < w.width / 2 + 40) ||
+          walls.some((w) => projectPoint(inner, w.a, w.b).distance < w.width / 2 + 40)
+        )
+          continue;
+        out.push({ inside: inner, outside: outer });
+      }
+  }
+  return out;
+}
+function outdoorPath(p: Project, grid: NavigationGrid, from: Point, to: Point) {
+  if (p.rooms.some((r) => inside(from, r.poly))) return utilityPath(grid, from, to);
+  const walls = allWalls(p);
+  const outsideClear = (a: Point, b: Point) => {
+    const n = Math.max(1, Math.ceil(distance(a, b) / 75));
+    for (let i = 0; i <= n; i++) {
+      const at: Point = [a[0] + ((b[0] - a[0]) * i) / n, a[1] + ((b[1] - a[1]) * i) / n];
+      if (
+        p.rooms.some((r) => inside(at, r.poly)) ||
+        p.shafts.some((s) => nearPolygon(at, s.poly, 40)) ||
+        walls.some((w) => projectPoint(at, w.a, w.b).distance < w.width / 2 + 20)
+      )
+        return false;
+    }
+    return true;
+  };
+  const anchors = p.rooms
+    .flatMap((r) => exteriorAnchors(p, r))
+    .sort((a, b) => distance(from, a.outside) - distance(from, b.outside));
+  for (const at of anchors) {
+    const path = utilityPath(grid, at.inside, to);
+    if (!path.length) continue;
+    for (const corner of [
+      [from[0], at.outside[1]],
+      [at.outside[0], from[1]],
+    ] as Point[])
+      if (outsideClear(from, corner) && outsideClear(corner, at.outside))
+        return simplifyOrthogonal([from, corner, at.outside, at.inside, ...path]);
+  }
+  return [];
+}
 export function planUtilities(
   p: Project,
   roomIds: string[],
@@ -303,7 +397,11 @@ export function planUtilities(
   };
   const sourceCache = new Map<UtilityKind, Device>();
   const source = (system: UtilityKind, room: Room): Device | undefined => {
-    if (system !== 'drain' && sourceCache.has(system)) return sourceCache.get(system);
+    const local =
+      system === 'drain' ||
+      system === 'condensate' ||
+      (system === 'refrigerant' && settings.acMode !== 'central');
+    if (!local && sourceCache.has(system)) return sourceCache.get(system);
     const explicit = settings.sources[system];
     const candidates = sourceCandidates({ ...p, devices: working }, system).filter(
       (d) => !updating(d.autoUtility),
@@ -314,7 +412,8 @@ export function planUtilities(
           (d) =>
             d.autoUtility?.role === 'source' &&
             d.autoUtility.system === system &&
-            (system !== 'drain' || d.autoUtility.roomId === room.id),
+            (!local || d.autoUtility.roomId === room.id) &&
+            (system !== 'refrigerant' || d.acMode === (settings.acMode ?? 'split')),
         );
     if (explicit && !found) {
       result.warnings.push(`${ROUTE_KINDS[system].name}指定的接入点已失效，请重新选择。`);
@@ -324,28 +423,38 @@ export function planUtilities(
       const ranked = [...candidates].sort(
         (a, b) => distance([a.x, a.y], roomCenter(room.poly)) - distance([b.x, b.y], roomCenter(room.poly)),
       );
-      found = ranked.find((d) =>
-        system === 'power'
-          ? d.kind === 'panel'
-          : system === 'drain'
-            ? d.kind === 'pipe' && d.pipeSystem === 'drain'
-            : system === 'cold'
-              ? (d.kind === 'pipe' && d.pipeSystem === 'water') || /总进水|冷水进水/.test(d.name)
-              : system === 'hot'
-                ? /热水源|热水供水|热水器/.test(d.name)
-                : /弱电箱|汇聚|路由|光猫/.test(d.name),
+      found = ranked.find(
+        (d) =>
+          !d.autoUtility &&
+          (system === 'power'
+            ? d.kind === 'panel'
+            : system === 'drain'
+              ? d.kind === 'pipe' && d.pipeSystem === 'drain'
+              : system === 'cold'
+                ? (d.kind === 'pipe' && d.pipeSystem === 'water') || /总进水|冷水进水/.test(d.name)
+                : system === 'hot'
+                  ? /热水源|热水供水|热水器/.test(d.name)
+                  : system === 'refrigerant'
+                    ? d.kind === 'acoutdoor'
+                    : system === 'condensate'
+                      ? d.kind === 'acdrain' || d.kind === 'pipe'
+                      : /弱电箱|汇聚|路由|光猫/.test(d.name)),
       );
     }
     if (!found) {
       const owner =
-        system === 'drain'
+        system === 'drain' || system === 'condensate' || system === 'refrigerant'
           ? room
           : system === 'power' || system === 'weak'
             ? (p.rooms.find((r) => effectiveRoomKind(p, r) === 'hallway') ??
               p.rooms.find((r) => effectiveRoomKind(p, r) === 'living') ??
               room)
             : (p.rooms.find((r) => effectiveRoomKind(p, r) === 'kitchen') ?? room);
-      const at = location(p, owner, owner.poly[0], working);
+      const at =
+        system === 'refrigerant'
+          ? exteriorAnchors(p, owner).find((v) => !working.some((d) => distance(v.outside, [d.x, d.y]) < 400))
+              ?.outside
+          : location(p, owner, owner.poly[0], working);
       if (!at) {
         result.warnings.push(`${owner.name}没有可放置${ROUTE_KINDS[system].name}接入点的位置。`);
         return;
@@ -356,6 +465,8 @@ export function planUtilities(
         cold: '冷水总进水',
         hot: '热水供水',
         drain: '排水接入预留',
+        refrigerant: settings.acMode === 'central' ? '中央空调室外机' : `${room.name}分体空调室外机`,
+        condensate: `${room.name}冷凝水接入预留`,
       }[system];
       found = {
         id: uid(),
@@ -366,13 +477,20 @@ export function planUtilities(
               ? 'network'
               : system === 'drain'
                 ? 'drain'
-                : 'water',
+                : system === 'refrigerant'
+                  ? 'acoutdoor'
+                  : system === 'condensate'
+                    ? 'acdrain'
+                    : system === 'hot'
+                      ? 'hotwater'
+                      : 'coldwater',
         x: at[0],
         y: at[1],
-        height: system === 'drain' ? 0 : system === 'power' ? 1600 : 500,
-        name: `${name}（建议位置）`,
-        circuit: name,
+        height: system === 'drain' || system === 'condensate' ? 0 : system === 'power' ? 1600 : 500,
+        name: `${name}（建议位置）`.slice(0, 150),
+        circuit: name.slice(0, 150),
         rotation: 0,
+        ...(system === 'refrigerant' ? { acMode: settings.acMode ?? 'split' } : {}),
         autoUtility: { roomId: owner.id, key: `source-${system}`, system, role: 'source' },
       };
       working.push(found);
@@ -383,7 +501,7 @@ export function planUtilities(
       result.proposedSources.push(found.name);
     }
     used.add(found.id);
-    if (system !== 'drain') sourceCache.set(system, found);
+    if (!local) sourceCache.set(system, found);
     return found;
   };
   const links: { room: Room; slot: Slot; from: Device; to: Device }[] = [];
@@ -395,7 +513,7 @@ export function planUtilities(
       result.warnings.push(`${room.name}尚未指定用途，已跳过。`);
       continue;
     }
-    const schedule = slots(p, room).filter((s) => systems.has(s.system));
+    const schedule = slots(p, room, settings).filter((s) => systems.has(s.system));
     const byKey = new Map<string, Device>();
     for (const slot of schedule) {
       const supply = source(slot.system, room);
@@ -412,9 +530,8 @@ export function planUtilities(
             (d) =>
               !d.autoUtility &&
               !used.has(d.id) &&
-              d.kind === slot.kind &&
-              inside([d.x, d.y], room.poly) &&
-              (slot.kind !== 'water' || (slot.system === 'hot' ? /热/.test(d.name) : !/热/.test(d.name))),
+              resolvedDeviceKind(d) === slot.kind &&
+              inside([d.x, d.y], room.poly),
           )
           .sort((a, b) => distance([a.x, a.y], slot.at) - distance([b.x, b.y], slot.at))[0];
       if (!device) {
@@ -431,7 +548,7 @@ export function planUtilities(
           y: at[1],
           height: slot.kind === 'light' ? settings.ceilingHeight : slot.height,
           circuit:
-            `${room.name}·${slot.kind === 'light' || slot.kind === 'switch' ? '照明' : slot.system === 'power' ? '插座' : ROUTE_KINDS[slot.system].name}`.slice(
+            `${room.name}·${slot.kind === 'light' || slot.kind === 'switch' ? '照明' : slot.kind === 'acsocket' ? '空调专用电源' : slot.system === 'power' ? '插座' : ROUTE_KINDS[slot.system].name}`.slice(
               0,
               150,
             ),
@@ -441,7 +558,24 @@ export function planUtilities(
         working.push(device);
       }
       if (device.autoUtility) {
+        device.kind = slot.kind;
         if (device.kind === 'light') device.height = settings.ceilingHeight;
+        if (slot.key.startsWith('ac-')) {
+          const changedMode = device.acMode !== (settings.acMode ?? 'split');
+          device.acMode = settings.acMode ?? 'split';
+          device.height = slot.height;
+          device.name = `${room.name}·${slot.name}`.slice(0, 150);
+          if (changedMode && slot.kind === 'acindoor') {
+            const at = location(
+              p,
+              room,
+              slot.at,
+              working.filter((v) => v.id !== device!.id),
+              slot.center,
+            );
+            if (at) [device.x, device.y] = at;
+          }
+        }
         remember(device);
       } else used.add(device.id);
       wanted.add(device.id);
@@ -451,8 +585,8 @@ export function planUtilities(
       links.push({
         room,
         slot,
-        from: slot.system === 'drain' ? device : from,
-        to: slot.system === 'drain' ? supply : device,
+        from: slot.system === 'drain' || slot.system === 'condensate' ? device : from,
+        to: slot.system === 'drain' || slot.system === 'condensate' ? supply : device,
       });
     }
   }
@@ -460,7 +594,7 @@ export function planUtilities(
   for (const { room, slot, from, to } of links) {
     if (from.id === to.id) continue;
     // Keep existing hand-drawn connections to this terminal.
-    const terminal = slot.system === 'drain' ? from : to;
+    const terminal = slot.system === 'drain' || slot.system === 'condensate' ? from : to;
     if (
       retainedRoutes.some(
         (r) =>
@@ -472,7 +606,11 @@ export function planUtilities(
       )
     )
       continue;
-    const points = grid ? utilityPath(grid, [from.x, from.y], [to.x, to.y]) : [];
+    const points = grid
+      ? slot.system === 'refrigerant'
+        ? outdoorPath(p, grid, [from.x, from.y], [to.x, to.y])
+        : utilityPath(grid, [from.x, from.y], [to.x, to.y])
+      : [];
     if (points.length < 2) {
       result.warnings.push(
         `${room.name}·${slot.name}未找到连通路径，点位保留待接线；请核对门洞、墙体和接入点。`,
@@ -491,12 +629,24 @@ export function planUtilities(
       height:
         slot.system === 'drain'
           ? 0
-          : settings.mode === 'floor'
-            ? settings.floorHeight
-            : settings.ceilingHeight,
+          : slot.system === 'condensate'
+            ? Math.min(from.height, settings.mode === 'floor' ? settings.floorHeight : settings.ceilingHeight)
+            : settings.mode === 'floor'
+              ? settings.floorHeight
+              : settings.ceilingHeight,
       startDeviceId: from.id,
       endDeviceId: to.id,
       autoUtility: { roomId: room.id, key: slot.key, system: slot.system, role: 'terminal' },
+      ...(slot.system === 'power'
+        ? {
+            powerUse:
+              slot.kind === 'light' || slot.kind === 'switch'
+                ? ('lighting' as const)
+                : slot.kind === 'acsocket'
+                  ? ('ac' as const)
+                  : ('socket' as const),
+          }
+        : {}),
     };
     result.routes.push(route);
     result.rooms.find((r) => r.id === room.id)!.routes++;
@@ -518,6 +668,27 @@ export function planUtilities(
         ),
     )
     .map((d) => d.id);
+  for (const d of p.devices) {
+    const tag = d.autoUtility;
+    if (
+      tag?.role === 'source' &&
+      tag.system === 'refrigerant' &&
+      systems.has('refrigerant') &&
+      !wanted.has(d.id) &&
+      ![...retainedRoutes, ...result.routes].some(
+        (r) =>
+          r.startDeviceId === d.id ||
+          r.endDeviceId === d.id ||
+          distance(r.points[0], [d.x, d.y]) < 100 ||
+          distance(r.points.at(-1)!, [d.x, d.y]) < 100,
+      )
+    )
+      result.removeDevices.push(d.id);
+  }
+  if (result.routes.some((r) => r.kind === 'refrigerant'))
+    result.warnings.push(
+      '冷媒管组的外墙连接仅标示建议穿出位置，需核对机位、外墙开孔、冷媒液气管规格与设备选型。',
+    );
   result.warnings = [...new Set(result.warnings)];
   result.proposedSources = [...new Set(result.proposedSources)];
   return result;

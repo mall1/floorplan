@@ -1,5 +1,14 @@
 import { createContext, useContext } from 'react';
-import type { Candidate, DeviceKind, Project, Selection, Tool, UtilityKind, Workspace } from '../model/types';
+import type {
+  Candidate,
+  DeviceKind,
+  Point,
+  Project,
+  Selection,
+  Tool,
+  UtilityKind,
+  Workspace,
+} from '../model/types';
 import type { RecognitionResult, RecognizedOpening, RecognizedShaft } from '../model/recognition';
 import type { analyzeCirculation } from '../model/circulation';
 import type { UtilityLayoutResult } from '../model/auto-utilities';
@@ -17,6 +26,13 @@ export interface RecognitionPreview extends Omit<
   showGrid: boolean;
   showWalls: boolean;
   importWalls: boolean;
+  extraWalls?: { a: Point; b: Point; width: number }[];
+}
+export interface CandidateEdit {
+  id: string;
+  poly: Point[];
+  line: Point[];
+  drawing: boolean;
 }
 export interface StudioState {
   project: Project;
@@ -35,12 +51,19 @@ export interface StudioState {
   setDeviceKind: (v: DeviceKind) => void;
   routeKind: UtilityKind;
   setRouteKind: (v: UtilityKind) => void;
+  powerUse: 'socket' | 'lighting' | 'ac';
+  setPowerUse: (v: 'socket' | 'lighting' | 'ac') => void;
   circuit: string;
   setCircuit: (v: string) => void;
   calibrationLength: number;
   setCalibrationLength: (v: number) => void;
   candidates: Candidate[];
   setCandidates: (v: Candidate[]) => void;
+  candidateEdit: CandidateEdit | null;
+  setCandidateEdit: React.Dispatch<React.SetStateAction<CandidateEdit | null>>;
+  editCandidates: (candidates: Candidate[], recognition: RecognitionPreview) => void;
+  undoCandidateEdit: () => void;
+  canUndoCandidateEdit: boolean;
   recognition: RecognitionPreview | null;
   setRecognition: React.Dispatch<React.SetStateAction<RecognitionPreview | null>>;
   layers: {

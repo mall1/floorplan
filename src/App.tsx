@@ -22,7 +22,12 @@ import {
   Compass,
 } from 'lucide-react';
 import { useProject } from './hooks/useProject';
-import { StudioContext, type StudioState, type RecognitionPreview } from './components/StudioContext';
+import {
+  StudioContext,
+  type StudioState,
+  type RecognitionPreview,
+  type CandidateEdit,
+} from './components/StudioContext';
 import Library from './components/Library';
 import { analyzeCirculation, FLOW_TYPES } from './model/circulation';
 import { DEFAULT_ANALYSIS } from './model/space-analysis';
@@ -61,10 +66,36 @@ export default function App() {
     [view, setView] = useState<'2d' | '3d'>('2d');
   const [deviceKind, setDeviceKind] = useState<DeviceKind>('socket'),
     [routeKind, setRouteKind] = useState<UtilityKind>('cold'),
+    [powerUse, setPowerUse] = useState<'socket' | 'lighting' | 'ac'>('socket'),
     [circuit, setCircuit] = useState('默认回路'),
     [calibrationLength, setCalibrationLength] = useState(3000),
     [candidates, setCandidates] = useState<Candidate[]>([]);
   const [recognition, setRecognition] = useState<RecognitionPreview | null>(null);
+  const [candidateEdit, setCandidateEdit] = useState<CandidateEdit | null>(null);
+  const [candidateHistory, setCandidateHistory] = useState<
+    { candidates: Candidate[]; recognition: RecognitionPreview }[]
+  >([]);
+  useEffect(() => {
+    if (!recognition) {
+      setCandidateEdit(null);
+      setCandidateHistory([]);
+    }
+  }, [recognition]);
+  const editCandidates = (next: Candidate[], nextRecognition: RecognitionPreview) => {
+    if (recognition)
+      setCandidateHistory((v) => [...v.slice(-29), structuredClone({ candidates, recognition })]);
+    setCandidates(next);
+    setRecognition(nextRecognition);
+    setCandidateEdit(null);
+  };
+  const undoCandidateEdit = () => {
+    const previous = candidateHistory.at(-1);
+    if (!previous) return;
+    setCandidates(previous.candidates);
+    setRecognition(previous.recognition);
+    setCandidateEdit(null);
+    setCandidateHistory((v) => v.slice(0, -1));
+  };
   const [utilityPreview, setUtilityPreview] = useState<UtilityLayoutResult | null>(null);
   useEffect(() => {
     setUtilityPreview(null);
@@ -259,12 +290,19 @@ export default function App() {
     deviceKind,
     setDeviceKind,
     routeKind,
+    powerUse,
+    setPowerUse,
     setRouteKind,
     circuit,
     setCircuit,
     calibrationLength,
     setCalibrationLength,
     candidates,
+    candidateEdit,
+    setCandidateEdit,
+    editCandidates,
+    undoCandidateEdit,
+    canUndoCandidateEdit: !!candidateHistory.length,
     setCandidates,
     recognition,
     setRecognition,

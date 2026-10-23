@@ -29,6 +29,12 @@ The area panel reports net floor, furniture footprint, remaining floor and stora
 
 Toggle daily (bedrooms to bathroom/living room), housework (kitchen, dining, laundry, balcony) and guest (inferred entrance, living, dining) routes independently. Paths avoid structural and furniture obstacles and show direction and length. Furniture bottlenecks have red markers; disconnected structures or insufficient door clearance are reported without drawing a false straight route. The reference width defaults to 600 mm and is adjustable from 300 to 1200 mm. Doors are assumed open. Grid spacing starts at 150 mm and adapts for large plans; tight turns still need review. Routes do not model door motion, steps or full 3D clearance. Analysis layers appear in 2D and exported PNGs; settings and room types persist in JSON, autosave and undo/redo.
 
+## Correcting recognized room partitions
+
+Before importing image-recognition results, use **修正房间分区** to select a candidate (or click it on the canvas). Drag green vertices or edit their world coordinates, then apply the outline. Merge a neighboring candidate, optionally removing interior detected wall spans and deselecting internal openings while keeping the perimeter. Narrow parallel wall gaps can be bridged up to an editable limit (400 mm by default). The image pixels remain unchanged and merging does not determine whether a real wall can be removed.
+
+Choose a horizontal/vertical split or draw two points on the canvas, then drag the blue endpoints or enter coordinates. The line extends to the room outline; colored previews show the two resulting areas. Confirm to create two independently named/typed candidates, with an optional divider wall. Invalid cuts, holes, disconnected mergers and overlap with other candidates are rejected. Each split part must be at least 0.2 m². Undo candidate edits restores up to 30 changes; normal project undo applies after import. Candidate outline edits do not automatically move separately detected walls.
+
 ## Automatic utility layout
 
 In **水电布局** (Utilities), choose all rooms or the selected room, floor or ceiling routing, and the required cold/hot water, drainage, power and low-voltage systems. Default horizontal elevations are 50 mm at floor level and 2600 mm overhead; both are editable. Lights follow the ceiling setting. Drainage stays at a 0 mm floor reference in either mode.
@@ -40,5 +46,13 @@ Preview shows colored dashed routes, counts, lengths and unresolved connections 
 Routes use checked orthogonal paths through connected doorways, avoiding walls and shafts. Furniture is ignored for hidden floor/ceiling routing. Unreachable endpoints remain as points with a warning instead of a line through a wall. Moving an attached device updates its route endpoint; manually editing route nodes or dragging a route detaches it from automatic planning. Recheck or regenerate after moving devices. 3D includes vertical connections to devices. CSV separates plan lengths and vertical segments; unlinked manual routes retain plan-only lengths. Shared segments are counted per branch, so totals are not a consolidated purchasing schedule.
 
 This is a planning draft, not a reconstruction of hidden services. It does not calculate loads, conductor sizing, drain slopes, beam penetrations, system separation or full 3D clashes. Verify actual supply points, lintels and overhead clearance before construction planning.
+
+### Distinct devices and air conditioning
+
+Cold/hot water points, sockets, switches and lights now have separate 2D symbols and 3D shapes. Legacy generic water points resolve from their automatic tag or a hot-water name; the inspector allows explicit type changes. Power routes distinguish socket, lighting and AC supply purposes with colors, line styles and CSV names. Choose the purpose before drawing or edit it afterward.
+
+Enable the refrigerant and condensate systems, then choose split or central AC. Bedrooms, living rooms, dining rooms and studies receive indoor endpoints and dedicated power points when power is enabled. Split mode suggests an outdoor unit per room; central mode shares an outdoor unit and places indoor terminals overhead. Suggested outdoor locations lie outside the plan; an existing outdoor unit may be selected. Regeneration updates the selected scope and cleans unused automatic outdoor units while preserving references from other rooms and manual routes. Condensate horizontal segments never exceed the outlet elevation.
+
+Central AC here means a refrigerant-based schematic, not a duct or hydronic design. The refrigerant route represents liquid/gas lines as one group; it does not size or measure both separately, calculate loads or condensate slope, select branch fittings, or validate outdoor installation and wall penetrations. Existing saved five-system selections require manually enabling the new AC systems.
 
 Coordinates use millimetres. All processing and storage stay in the browser; export JSON backups to retain multiple designs. See the [Chinese guide](user-guide.md) for the detailed workflow and architecture.

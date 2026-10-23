@@ -11,6 +11,7 @@ import { DEFAULT_PIPE_SETTINGS } from '../model/pipe-presets';
 import { inferRoomKind, kindFromName, ROOM_TYPES } from '../model/room-types';
 import type { Candidate, Point, Project, RoomKind } from '../model/types';
 import type { RecognitionResult } from '../model/recognition';
+import CandidateEditor from './CandidateEditor';
 export default function ReferenceControls() {
   const {
     project,
@@ -24,6 +25,7 @@ export default function ReferenceControls() {
     recognition,
     setRecognition,
     fit,
+    candidateEdit,
   } = useStudio();
   const ref = project.reference;
   const wallSettings = ref?.wallSettings ?? DEFAULT_WALL_SETTINGS;
@@ -316,6 +318,10 @@ export default function ReferenceControls() {
   };
   const apply = (onlyPipes = false) => {
     if (!ref || recognition?.source !== ref.src) return;
+    if (!onlyPipes && candidateEdit) {
+      notify('请先应用轮廓调整、确认切分或取消当前调整，再添加识别结果');
+      return;
+    }
     if (recognition.referenceWidth !== ref.width || recognition.settingsKey !== settingsKey) {
       notify('比例已变更，请重新识别后再导入，以保证墙厚和烟道尺寸准确');
       return;
@@ -368,7 +374,7 @@ export default function ReferenceControls() {
           kind: r.kind ?? (kindFromName(r.name) === 'unknown' ? undefined : kindFromName(r.name)),
           poly: r.poly,
           flooring: structuredClone(d.globalFlooring),
-          boundary: !recognition.importWalls,
+          boundary: r.boundary ?? !recognition.importWalls,
           counted: true,
           wallWidth: wallSettings.thin,
         })),
@@ -392,6 +398,16 @@ export default function ReferenceControls() {
         });
       }
       joinWallAxes(d.walls.slice(wallStart));
+      if (!onlyPipes)
+        for (const w of recognition.extraWalls ?? [])
+          d.walls.push({
+            id: uid(),
+            a: imagePoint(ref, w.a),
+            b: imagePoint(ref, w.b),
+            width: Math.max(20, Math.min(2000, w.width * factor)),
+            bearing: false,
+            height: 2800,
+          });
       for (const o of selectedOpenings) {
         const item = resolvedOpening(
           {
@@ -995,6 +1011,7 @@ export default function ReferenceControls() {
             )}
             {candidates.length > 0 && (
               <div className="candidates">
+                <CandidateEditor />
                 <h4>
                   候选房间 · {candidates.filter((c) => c.selected).length}/{candidates.length}
                 </h4>

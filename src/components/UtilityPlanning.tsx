@@ -90,6 +90,25 @@ export default function UtilityPlanning() {
           </label>
         ))}
       </div>
+      <label className="field">
+        <span>空调系统形式</span>
+        <select
+          aria-label="空调系统形式"
+          value={settings.acMode ?? 'split'}
+          onChange={(e) => update({ acMode: e.target.value as 'split' | 'central' })}
+        >
+          <option value="split">分体空调 · 按房间配置机组</option>
+          <option value="central">中央空调 · 共享室外机</option>
+        </select>
+      </label>
+      <p className="help">
+        卧室、客厅、餐厅和书房配置空调末端、专用电源、冷媒与冷凝水管。中央空调末端设在顶面；室外机建议点须按实际机位移动。冷媒管组代表液管和气管，管径与冷凝水坡度需另行核对。
+      </p>
+      <div className="utility-legend">
+        <span style={{ color: '#bf5c4d' }}>━ 插座回路</span>
+        <span style={{ color: '#b38523' }}>┄ 照明回路</span>
+        <span style={{ color: '#466ea9' }}>┅ 空调专用电源</span>
+      </div>
       <details className="utility-sources">
         <summary>接入点 · 自动选择或手动指定</summary>
         {settings.systems.map((kind) => (
@@ -117,7 +136,7 @@ export default function UtilityPlanning() {
       </details>
       <p className="help">
         走地 /
-        走顶用于给水和强弱电；排水单独按地面参考线生成。重复生成会更新本范围的自动方案，保留手工点位与管线。可整体撤销。
+        走顶用于给水、冷媒和强弱电；排水单独按地面参考线生成，冷凝水水平段不高于出口。重复生成会更新本范围的自动方案，保留手工点位与管线。可整体撤销。
       </p>
       <button
         className="wide primary"
