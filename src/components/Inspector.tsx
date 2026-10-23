@@ -3,6 +3,7 @@ import { useStudio } from './StudioContext';
 import RoomCalibrationControls from './RoomCalibrationControls';
 import WallAreaPanel from './WallAreaPanel';
 import RoomPlanning from './RoomPlanning';
+import { detachUtilityRoute, routeLengths } from '../model/utility-connections';
 import { NumberField, Section, TextField } from './Fields';
 import {
   allWalls,
@@ -88,6 +89,15 @@ export default function Inspector({ onClose }: { onClose: () => void }) {
         (length(r.points) / 1000).toFixed(2),
         'm',
         `${r.circuit};管径${r.diameter}`,
+        r.height,
+      ]);
+    for (const r of p.routes.filter((r) => routeLengths(p, r).vertical > 0))
+      rows.push([
+        '管线竖向段',
+        ROUTE_KINDS[r.kind].name,
+        routeLengths(p, r).vertical.toFixed(2),
+        'm',
+        r.circuit,
         r.height,
       ]);
     for (const d of p.devices)
@@ -560,7 +570,19 @@ export default function Inspector({ onClose }: { onClose: () => void }) {
               <span>平面路径长度</span>
               <strong>{(length(route.points) / 1000).toFixed(2)} m</strong>
             </div>
-            <p className="help">长度不含连接点位的竖向段；工程清单需结合现场复核。</p>
+            {route.startDeviceId || route.endDeviceId ? (
+              <>
+                <div className="estimate">
+                  <span>含竖向连接段</span>
+                  <strong>{routeLengths(p, route).total.toFixed(2)} m</strong>
+                </div>
+                <p className="help">
+                  自动管线连接点位高度，移动点位会联动端点；编辑线路节点后转为手动管线。改变墙体后请重新生成并检查路径。
+                </p>
+              </>
+            ) : (
+              <p className="help">长度不含连接点位的竖向段；工程清单需结合现场复核。</p>
+            )}
           </Section>
           <Section title="线路节点">
             <div className="vertex-list">
@@ -574,7 +596,9 @@ export default function Inspector({ onClose }: { onClose: () => void }) {
                       value={pt[axis]}
                       onChange={(v) =>
                         s.commit((d) => {
-                          d.routes.find((a) => a.id === route.id)!.points[i][axis] = v;
+                          const item = d.routes.find((a) => a.id === route.id)!;
+                          detachUtilityRoute(item);
+                          item.points[i][axis] = v;
                         })
                       }
                     />
@@ -584,7 +608,9 @@ export default function Inspector({ onClose }: { onClose: () => void }) {
                     disabled={route.points.length <= 2}
                     onClick={() =>
                       s.commit((d) => {
-                        d.routes.find((a) => a.id === route.id)!.points.splice(i, 1);
+                        const item = d.routes.find((a) => a.id === route.id)!;
+                        detachUtilityRoute(item);
+                        item.points.splice(i, 1);
                       })
                     }
                   >

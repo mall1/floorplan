@@ -923,6 +923,71 @@ h2 {
   gap: 3px;
   margin-top: 10px;
 }
+.utility-systems {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  margin: 12px 0;
+}
+.utility-systems .check-row {
+  margin: 3px 0;
+  gap: 5px;
+  font-size: 11px;
+}
+.utility-systems i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.utility-sources summary,
+.utility-preview-report summary {
+  cursor: pointer;
+  color: var(--green);
+  font-size: 11px;
+  padding: 10px 0;
+}
+.utility-sources .field {
+  margin-top: 8px;
+}
+.utility-preview-report {
+  border: 1px solid #dce4d6;
+  border-radius: 8px;
+  background: #f5f7f0;
+  padding: 10px;
+  margin-top: 12px;
+  font-size: 11px;
+  line-height: 1.7;
+}
+.utility-preview-report > b {
+  display: block;
+  color: var(--green);
+}
+.utility-preview-report ul {
+  padding-left: 18px;
+  margin: 0;
+  max-height: 180px;
+  overflow-y: auto;
+  color: #966342;
+}
+.utility-preview-report button {
+  margin-top: 8px;
+}
+.utility-room-results {
+  max-height: 160px;
+  overflow-y: auto;
+}
+.utility-room-results > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 6px;
+  border-bottom: 1px solid #e1e7da;
+  padding: 5px 0;
+}
+.utility-room-results small {
+  white-space: nowrap;
+  color: #7a8772;
+}
 .analysis-room-list button {
   display: flex;
   align-items: center;

@@ -130,7 +130,13 @@ function nearest(grid: NavigationGrid, room: Room, target: Point, furniture: boo
   return best;
 }
 /** A* with checked edges; diagonal moves and path simplification cannot cut corners. */
-export function gridPath(grid: NavigationGrid, start: number, goal: number, furniture = true): Point[] {
+export function gridPath(
+  grid: NavigationGrid,
+  start: number,
+  goal: number,
+  furniture = true,
+  orthogonal = false,
+): Point[] {
   if (start < 0 || goal < 0) return [];
   const mask = furniture ? grid.free : grid.base;
   if (!mask[start] || !mask[goal]) return [];
@@ -177,7 +183,12 @@ export function gridPath(grid: NavigationGrid, start: number, goal: number, furn
       const simplified: Point[] = [path[0]];
       for (let i = 0; i < path.length - 1;) {
         let next = Math.min(path.length - 1, i + 20);
-        while (next > i + 1 && !grid.canSegment(path[i], path[next], furniture)) next--;
+        while (
+          next > i + 1 &&
+          ((orthogonal && path[i][0] !== path[next][0] && path[i][1] !== path[next][1]) ||
+            !grid.canSegment(path[i], path[next], furniture))
+        )
+          next--;
         simplified.push(path[next]);
         i = next;
       }
@@ -196,6 +207,7 @@ export function gridPath(grid: NavigationGrid, start: number, goal: number, furn
       [-1, 1],
       [1, 1],
     ]) {
+      if (orthogonal && dx && dy) continue;
       const nx = x + dx,
         ny = y + dy,
         next = ny * grid.cols + nx;

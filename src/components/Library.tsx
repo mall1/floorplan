@@ -15,6 +15,7 @@ import { useStudio } from './StudioContext';
 import ReferenceControls from './ReferenceControls';
 import FloorControls from './FloorControls';
 import SpaceAnalysisPanel from './SpaceAnalysisPanel';
+import UtilityPlanning from './UtilityPlanning';
 import { Section } from './Fields';
 import { LIB } from '../data/original';
 import { furnSVG } from '../render/furniture-svg';
@@ -180,6 +181,7 @@ export default function Library({ onClose }: { onClose: () => void }) {
       )}
       {s.workspace === 'utilities' && (
         <>
+          <UtilityPlanning />
           <Section title="管线绘制" extra={<Cable size={16} />}>
             <div className="route-types">
               {Object.entries(ROUTE_KINDS).map(([key, v]) => (

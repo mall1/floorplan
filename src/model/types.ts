@@ -93,6 +93,19 @@ export interface PipeRecognitionSettings {
   tolerance: number;
 }
 export type UtilityKind = 'cold' | 'hot' | 'drain' | 'power' | 'weak';
+export interface AutoUtilityTag {
+  roomId: string;
+  key: string;
+  system: UtilityKind;
+  role: 'source' | 'terminal';
+}
+export interface UtilityLayoutSettings {
+  mode: 'floor' | 'ceiling';
+  floorHeight: number;
+  ceilingHeight: number;
+  systems: UtilityKind[];
+  sources: Partial<Record<UtilityKind, string>>;
+}
 export interface Route {
   id: string;
   kind: UtilityKind;
@@ -100,6 +113,9 @@ export interface Route {
   circuit: string;
   diameter: number;
   height: number;
+  autoUtility?: AutoUtilityTag;
+  startDeviceId?: string;
+  endDeviceId?: string;
 }
 export type DeviceKind = 'socket' | 'switch' | 'light' | 'water' | 'drain' | 'network' | 'panel' | 'pipe';
 export interface Device {
@@ -113,6 +129,7 @@ export interface Device {
   rotation: number;
   diameter?: number;
   pipeSystem?: 'drain' | 'water' | 'unknown';
+  autoUtility?: AutoUtilityTag;
 }
 export interface Furniture {
   id: string;
@@ -156,6 +173,7 @@ export interface Project {
   globalFlooring: Flooring;
   wallFinish?: { height?: number; waste: number };
   analysis?: { flows: FlowKind[]; showAreas: boolean; showTypes: boolean; clearance: number };
+  utilityLayout?: UtilityLayoutSettings;
 }
 export type Selection = {
   kind: 'room' | 'wall' | 'opening' | 'shaft' | 'furniture' | 'route' | 'device' | 'measure';

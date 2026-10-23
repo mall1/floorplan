@@ -15,6 +15,7 @@ A browser-based floorplan editor for drawing rooms, recognizing reference images
 - **Furniture and utilities:** 94 furniture presets across 8 categories with cross-category search, editable water and electrical routes, and device placement with elevation and circuit settings.
 - **Room planning:** explainable room-use suggestions and manual overrides, with one-click furnishing by room type, standard/compact furniture and fill/replace modes.
 - **Space analysis:** net floor area, furniture footprint, remaining floor and storage footprint; daily, housework and guest routes with furniture bottleneck overlays.
+- **Automatic utilities:** room-aware device placement and orthogonal connections, floor/ceiling routing, selectable supply points, preview/apply and 3D risers. Regeneration updates generated routes while preserving manual work.
 - **Floor layouts:** tile and wood presets, custom dimensions, grout, patterns and laying origins, with whole-home or per-room layouts.
 - **Quantity estimates:** flooring materials and costs, wall finish areas and wallpaper reference areas, with CSV exports.
 - **3D views:** orbit and top views, cutaway walls, day/night lighting, interactive doors and indoor walkthroughs.
@@ -23,6 +24,10 @@ A browser-based floorplan editor for drawing rooms, recognizing reference images
 See the [3D preview of the 24 added furniture types](docs/images/furniture-catalog.png).
 
 ![Room types, automatic furnishing, floor areas and circulation analysis](docs/images/space-analysis.png)
+
+Open **水电布局** (Utilities), choose the room scope, floor/ceiling mode and systems, then preview and apply. See the [utility planning rules](docs/user-guide.en.md#automatic-utility-layout).
+
+![Room-aware utility preview with ceiling routing and system selection](docs/images/auto-utilities.png)
 
 ## Quick start
 

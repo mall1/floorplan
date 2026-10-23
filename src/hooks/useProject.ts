@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { demoProject, parseProject } from '../model/project';
 import type { Project } from '../model/types';
+import { syncUtilityConnections } from '../model/utility-connections';
 const STORE = 'floorplan-studio-v2';
 function initial() {
   try {
@@ -24,6 +25,7 @@ export function useProject() {
     const before = current.current;
     const next = typeof fn === 'function' ? structuredClone(before) : fn;
     if (typeof fn === 'function') fn(next);
+    syncUtilityConnections(next);
     past.current.push(before);
     if (past.current.length > 60) past.current.shift();
     future.current = [];

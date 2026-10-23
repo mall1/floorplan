@@ -23,10 +23,29 @@ const flooring = z.object({
   price: num.min(0).max(100000),
   waste: num.min(0).max(100),
 });
+const utilityKind = z.enum(['cold', 'hot', 'drain', 'power', 'weak']);
+const autoUtility = z
+  .object({ roomId: id, key: id, system: utilityKind, role: z.enum(['source', 'terminal']) })
+  .optional();
 export const projectSchema = z
   .object({
     version: z.literal(2),
     name,
+    utilityLayout: z
+      .object({
+        mode: z.enum(['floor', 'ceiling']),
+        floorHeight: num.min(0).max(500),
+        ceilingHeight: num.min(1800).max(6000),
+        systems: z.array(utilityKind).max(5),
+        sources: z.object({
+          power: id.optional(),
+          weak: id.optional(),
+          cold: id.optional(),
+          hot: id.optional(),
+          drain: id.optional(),
+        }),
+      })
+      .optional(),
     analysis: z
       .object({
         flows: z.array(z.enum(['daily', 'housework', 'guest'])).max(3),
@@ -144,6 +163,9 @@ export const projectSchema = z
         z.object({
           id,
           kind: z.enum(['cold', 'hot', 'drain', 'power', 'weak']),
+          autoUtility,
+          startDeviceId: id.optional(),
+          endDeviceId: id.optional(),
           points: z.array(point).min(2).max(500),
           circuit: name,
           diameter: num.min(1).max(1000),
@@ -156,6 +178,7 @@ export const projectSchema = z
         z.object({
           id,
           kind: z.enum(['socket', 'switch', 'light', 'water', 'drain', 'network', 'panel', 'pipe']),
+          autoUtility,
           diameter: num.min(10).max(1000).optional(),
           pipeSystem: z.enum(['drain', 'water', 'unknown']).optional(),
           x: coord,

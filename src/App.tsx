@@ -26,6 +26,7 @@ import { StudioContext, type StudioState, type RecognitionPreview } from './comp
 import Library from './components/Library';
 import { analyzeCirculation, FLOW_TYPES } from './model/circulation';
 import { DEFAULT_ANALYSIS } from './model/space-analysis';
+import type { UtilityLayoutResult } from './model/auto-utilities';
 import Inspector from './components/Inspector';
 import PlanCanvas from './components/PlanCanvas';
 import { demoProject, emptyProject, parseProject } from './model/project';
@@ -64,6 +65,10 @@ export default function App() {
     [calibrationLength, setCalibrationLength] = useState(3000),
     [candidates, setCandidates] = useState<Candidate[]>([]);
   const [recognition, setRecognition] = useState<RecognitionPreview | null>(null);
+  const [utilityPreview, setUtilityPreview] = useState<UtilityLayoutResult | null>(null);
+  useEffect(() => {
+    setUtilityPreview(null);
+  }, [project]);
   const circulation = useMemo(
     () =>
       analyzeCirculation(
@@ -163,7 +168,11 @@ export default function App() {
       }
       if (selection.kind === 'device') {
         const f = d.devices.find((v) => v.id === selection.id);
-        if (f) d.devices.push({ ...f, id, x: f.x + 300, y: f.y + 300 });
+        if (f) {
+          const copy = { ...f, id, x: f.x + 300, y: f.y + 300 };
+          delete copy.autoUtility;
+          d.devices.push(copy);
+        }
       }
     });
     if (['room', 'device', 'furniture'].includes(selection.kind)) select({ kind: selection.kind, id });
@@ -228,6 +237,8 @@ export default function App() {
   const state: StudioState = {
     project,
     circulation,
+    utilityPreview,
+    setUtilityPreview,
     commit,
     selection,
     select: (v, reveal) => {

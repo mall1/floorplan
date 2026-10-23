@@ -2,6 +2,8 @@ import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import { useStudio } from './StudioContext';
 import RecognitionOverlay from './RecognitionOverlay';
 import SpaceAnalysisOverlay from './SpaceAnalysisOverlay';
+import UtilityPreviewOverlay from './UtilityPreviewOverlay';
+import { detachUtilityRoute, syncUtilityConnections } from '../model/utility-connections';
 import {
   allWalls,
   bounds,
@@ -421,6 +423,7 @@ export default function PlanCanvas({
     }
     if (kind === 'route') {
       const r = next.routes.find((v) => v.id === id)!;
+      detachUtilityRoute(r);
       r.points = r.points.map((v, i) => (d.index === undefined || d.index === i ? move(v, delta) : v));
     }
     if (kind === 'wall' || kind === 'opening' || kind === 'measure') {
@@ -431,6 +434,7 @@ export default function PlanCanvas({
         if (d.index !== 0) item.b = move(item.b, delta);
       }
     }
+    syncUtilityConnections(next);
     d.preview = next;
     setPreview(next);
   };
@@ -845,6 +849,9 @@ export default function PlanCanvas({
         <>
           {p.routes.map((r) => (
             <g key={r.id} data-kind="route" data-id={r.id}>
+              <title>
+                {r.circuit} · {ROUTE_KINDS[r.kind].name} · 水平段 H {r.height} mm
+              </title>
               <polyline points={points(r.points)} fill="none" stroke="transparent" strokeWidth={radius * 3} />
               <polyline
                 points={points(r.points)}
@@ -857,7 +864,8 @@ export default function PlanCanvas({
             </g>
           ))}
           {p.devices.map((d) => {
-            const kind = DEVICE_KINDS[d.kind];
+            const kind = DEVICE_KINDS[d.kind],
+              color = d.autoUtility ? ROUTE_KINDS[d.autoUtility.system].color : kind.color;
             if (d.kind === 'pipe')
               return (
                 <g
@@ -899,6 +907,9 @@ export default function PlanCanvas({
                 transform={`translate(${d.x},${d.y}) rotate(${d.rotation})`}
                 style={{ cursor: 'move' }}
               >
+                <title>
+                  {d.name} · H {d.height} mm
+                </title>
                 <rect
                   x="-130"
                   y="-130"
@@ -906,14 +917,14 @@ export default function PlanCanvas({
                   height="260"
                   rx={d.kind === 'light' ? 130 : 30}
                   fill="#fffdf8"
-                  stroke={selected?.id === d.id ? '#203d38' : kind.color}
+                  stroke={selected?.id === d.id ? '#203d38' : color}
                   strokeWidth={25}
                 />
                 <text
                   textAnchor="middle"
                   y="55"
                   fontSize="150"
-                  fill={kind.color}
+                  fill={color}
                   fontFamily="sans-serif"
                   pointerEvents="none"
                 >
@@ -1020,6 +1031,7 @@ export default function PlanCanvas({
           );
         })()}
       <SpaceAnalysisOverlay />
+      <UtilityPreviewOverlay />
       {transient.length > 0 && (
         <g data-editor-only="true" pointerEvents="none">
           {['rectangle', 'shaft'].includes(s.tool) && transient.length >= 2 ? (

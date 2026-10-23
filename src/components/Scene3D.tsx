@@ -7,6 +7,7 @@ import { useStudio } from './StudioContext';
 import { allWalls, bounds, distance, projectBounds, wallSegments, openingPolygon } from '../model/geometry';
 import { floorFor, tilePolygons } from '../model/flooring';
 import { DEVICE_KINDS, ROUTE_KINDS } from '../model/presets';
+import { routeElevations } from '../model/utility-connections';
 import { buildFurniture, disposeModelMaterials } from '../render/furniture-models';
 import { buildOpening } from '../render/architecture-models';
 import { resolvedOpening, wallFootprint } from '../model/architecture';
@@ -499,11 +500,12 @@ export default function Scene3D() {
     if (s.layers.furniture) p.furniture.forEach((f) => e.root.add(buildFurniture(f)));
     if (s.layers.utilities) {
       p.routes.forEach((r) => {
-        for (let i = 1; i < r.points.length; i++) {
-          const a = r.points[i - 1],
-            b = r.points[i],
-            v1 = new THREE.Vector3(a[0] / 1000, r.height / 1000 + 0.04, a[1] / 1000),
-            v2 = new THREE.Vector3(b[0] / 1000, r.height / 1000 + 0.04, b[1] / 1000);
+        const vertices = routeElevations(p, r);
+        for (let i = 1; i < vertices.length; i++) {
+          const a = vertices[i - 1],
+            b = vertices[i],
+            v1 = new THREE.Vector3(a[0] / 1000, a[1] / 1000 + 0.04, a[2] / 1000),
+            v2 = new THREE.Vector3(b[0] / 1000, b[1] / 1000 + 0.04, b[2] / 1000);
           if (v1.distanceTo(v2) < 0.001) continue;
           const mesh = new THREE.Mesh(
             new THREE.CylinderGeometry(
@@ -526,7 +528,9 @@ export default function Scene3D() {
           pipe
             ? new THREE.CylinderGeometry((d.diameter ?? 110) / 2000, (d.diameter ?? 110) / 2000, height, 24)
             : new THREE.BoxGeometry(0.15, 0.15, 0.07),
-          new THREE.MeshStandardMaterial({ color: DEVICE_KINDS[d.kind].color }),
+          new THREE.MeshStandardMaterial({
+            color: d.autoUtility ? ROUTE_KINDS[d.autoUtility.system].color : DEVICE_KINDS[d.kind].color,
+          }),
         );
         mesh.position.set(d.x / 1000, pipe ? height / 2 : d.height / 1000 + 0.08, d.y / 1000);
         mesh.userData.deviceId = d.id;
