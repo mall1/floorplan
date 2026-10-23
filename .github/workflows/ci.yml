@@ -1,0 +1,45 @@
+name: Check and deploy editor
+on: [push, pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: npm test
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+      - name: Upload built site
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && vars.ENABLE_PAGES == 'true'
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: dist
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: browser-test-artifacts
+          path: artifacts/
+  deploy:
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && vars.ENABLE_PAGES == 'true'
+    needs: verify
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    concurrency:
+      group: github-pages
+      cancel-in-progress: false
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
